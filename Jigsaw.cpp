@@ -34,8 +34,6 @@
         /* version string */            "0.0.0");
 #endif
 
-#define UTF8_SUPPORT // UTF-8サポート。
-
 // 文字列クラス。
 #ifdef UNICODE
     typedef std::wstring string_t;
@@ -81,7 +79,6 @@ public:
     INT m_argc;
     LPTSTR *m_argv;
     std::map<string_t, string_t> m_settings;
-    std::vector<FONT_ENTRY> m_font_map;
 
     // コンストラクタ。
     JigsawMaker(HINSTANCE hInstance, INT argc, LPTSTR *argv);
@@ -91,8 +88,6 @@ public:
     {
     }
 
-    // フォントマップを読み込む。
-    BOOL LoadFontMap();
     // データをリセットする。
     void Reset();
     // ダイアログを初期化する。
@@ -337,91 +332,6 @@ doLoadPic(LPCWSTR filename, int* width = NULL, int* height = NULL, float* dpi = 
     return NULL; // 失敗。
 }
 
-// フォントマップを読み込む。
-BOOL JigsawMaker::LoadFontMap()
-{
-    // 初期化する。
-    m_font_map.clear();
-
-    // ローカルファイルの「fontmap.dat」を探す。
-    auto filename = findLocalFile(TEXT("fontmap.dat"));
-    if (filename == NULL)
-        return FALSE; // 見つからなかった。
-
-    // ファイル「fontmap.dat」を開く。
-    if (FILE *fp = _tfopen(filename, TEXT("rb")))
-    {
-        // 一行ずつ読み込む。
-        char buf[512];
-        while (fgets(buf, _countof(buf), fp))
-        {
-            // UTF-8文字列をワイド文字列に変換する。
-            WCHAR szText[512];
-            MultiByteToWideChar(CP_UTF8, 0, buf, -1, szText, _countof(szText));
-
-            // 前後の空白を取り除く。
-            str_trim(szText);
-
-            // 行コメントを削除する。
-            if (auto pch = wcschr(szText, L';'))
-            {
-                *pch = 0;
-            }
-
-            // もう一度前後の空白を取り除く。
-            str_trim(szText);
-
-            // 「=」を探す。
-            if (auto pch = wcschr(szText, L'='))
-            {
-                // 文字列を切り分ける。
-                *pch++ = 0;
-                auto font_name = szText;
-                auto font_file = pch;
-
-                // 前後の空白を取り除く。
-                str_trim(font_name);
-                str_trim(font_file);
-
-                // 「,」があればインデックスを読み込み、切り分ける。
-                pch = wcschr(pch, L',');
-                int index = -1;
-                if (pch)
-                {
-                    *pch++ = 0;
-                    index = _wtoi(pch);
-                }
-
-                // さらに前後の空白を取り除く。
-                str_trim(font_name);
-                str_trim(font_file);
-
-                // フォントファイルのパスファイル名を構築する。
-                TCHAR font_pathname[MAX_PATH];
-                GetWindowsDirectory(font_pathname, _countof(font_pathname));
-                PathAppend(font_pathname, TEXT("Fonts"));
-                PathAppend(font_pathname, font_file);
-
-                // パスファイル名が存在するか？
-                if (PathFileExists(font_pathname))
-                {
-                    // 存在すれば、フォントのエントリーを追加。
-                    FONT_ENTRY entry;
-                    entry.m_font_name = font_name;
-                    entry.m_pathname = font_pathname;
-                    entry.m_index = index;
-                    m_font_map.push_back(entry);
-                }
-            }
-        }
-
-        // ファイルを閉じる。
-        fclose(fp);
-    }
-
-    return m_font_map.size() > 0;
-}
-
 // コンストラクタ。
 JigsawMaker::JigsawMaker(HINSTANCE hInstance, INT argc, LPTSTR *argv)
     : m_hInstance(hInstance)
@@ -430,9 +340,6 @@ JigsawMaker::JigsawMaker(HINSTANCE hInstance, INT argc, LPTSTR *argv)
 {
     // データをリセットする。
     Reset();
-
-    // フォントマップを読み込む。
-    LoadFontMap();
 }
 
 // 既定値。
@@ -442,6 +349,7 @@ JigsawMaker::JigsawMaker(HINSTANCE hInstance, INT argc, LPTSTR *argv)
 #define IDC_PIECE_WIDTH_DEFAULT TEXT("30")
 #define IDC_PIECE_HEIGHT_DEFAULT TEXT("30")
 #define IDC_RANDOM_SEED_DEFAULT TEXT("0")
+#define IDC_BACKGROUND_IMAGE_DEFAULT TEXT("")
 
 // データをリセットする。
 void JigsawMaker::Reset()
@@ -453,6 +361,7 @@ void JigsawMaker::Reset()
     SETTING(IDC_PIECE_WIDTH) = IDC_PIECE_WIDTH_DEFAULT;
     SETTING(IDC_PIECE_HEIGHT) = IDC_PIECE_HEIGHT_DEFAULT;
     SETTING(IDC_RANDOM_SEED) = IDC_RANDOM_SEED_DEFAULT;
+    SETTING(IDC_BACKGROUND_IMAGE) = IDC_BACKGROUND_IMAGE_DEFAULT;
 }
 
 // ダイアログを初期化する。
@@ -510,6 +419,10 @@ BOOL JigsawMaker::DataFromDialog(HWND hwnd)
     str_trim(szText);
     SETTING(IDC_RANDOM_SEED) = szText;
 
+    ::GetDlgItemText(hwnd, IDC_BACKGROUND_IMAGE, szText, _countof(szText));
+    str_trim(szText);
+    SETTING(IDC_BACKGROUND_IMAGE) = szText;
+
     // チェックボックスからデータを取得する。
 #define GET_CHECK_DATA(id) do { \
     if (IsDlgButtonChecked(hwnd, id) == BST_CHECKED) \
@@ -536,6 +449,7 @@ BOOL JigsawMaker::DialogFromData(HWND hwnd)
 #undef SET_COMBO_DATA
 
     SetDlgItemText(hwnd, IDC_RANDOM_SEED, SETTING(IDC_RANDOM_SEED).c_str());
+    SetDlgItemText(hwnd, IDC_BACKGROUND_IMAGE, SETTING(IDC_BACKGROUND_IMAGE).c_str());
 
     // チェックボックスへデータを設定する。
 #define SET_CHECK_DATA(id) do { \
@@ -574,6 +488,7 @@ BOOL JigsawMaker::DataFromReg(HWND hwnd)
     GET_REG_DATA(IDC_PIECE_WIDTH);
     GET_REG_DATA(IDC_PIECE_HEIGHT);
     GET_REG_DATA(IDC_RANDOM_SEED);
+    GET_REG_DATA(IDC_BACKGROUND_IMAGE);
 #undef GET_REG_DATA
 
     // レジストリキーを閉じる。
@@ -611,6 +526,7 @@ BOOL JigsawMaker::RegFromData(HWND hwnd)
     SET_REG_DATA(IDC_PIECE_WIDTH);
     SET_REG_DATA(IDC_PIECE_HEIGHT);
     SET_REG_DATA(IDC_RANDOM_SEED);
+    SET_REG_DATA(IDC_BACKGROUND_IMAGE);
 #undef SET_REG_DATA
 
     // レジストリキーを閉じる。
@@ -806,6 +722,77 @@ void hpdf_draw_text(HPDF_Page page, HPDF_Font font, double font_size,
     }
 }
 
+void draw_curve(HPDF_Page page, double px0, double py0, double px1, double py1, double ratio)
+{
+    double dx = px1 - px0;
+    double dy = py1 - py0;
+    double mid_x = (px0 + px1) / 2 - ratio * dy;
+    double mid_y = (py0 + py1) / 2 + ratio * dx;
+    HPDF_Page_CurveTo(page, px0, py0, mid_x, mid_y, px1, py1);
+}
+
+// カット線を描画する。
+void hpdf_draw_cut_lines(HPDF_Doc pdf, HPDF_Page page, double x, double y, double width, double height, int rows, int columns, int seed)
+{
+    std::srand(seed);
+
+    // 外枠を描画する。
+    if (x != 0 || y != 0)
+    {
+        hpdf_draw_box(page, x, y, width, height);
+    }
+
+    // ピースのサイズ。
+    double cell_width = width / columns;
+    double cell_height = height / rows;
+
+    // 横線を描く。
+    for (INT iRow = 1; iRow < rows; ++iRow)
+    {
+        for (INT iColumn = 0; iColumn < columns; ++iColumn)
+        {
+            int sign = (std::rand() & 1) ? -1 : 1;
+            double tab_size = ((4 + std::rand() % 2) / 5.0) * cell_height / 3;
+            double px0 = x + (iColumn + 0) * cell_width;
+            double px1 = x + (iColumn + 1) * cell_width;
+            double px_mid = (px0 + px1) / 2;
+            double px_mid_1 = (2 * px0 + 1 * px1) / 3;
+            double px_mid_2 = (1 * px0 + 2 * px1) / 3;
+            double py = y + iRow * cell_height;
+            double magnitude = (2 + std::rand() % 2) * 0.2;
+            HPDF_Page_MoveTo(page, px0, py);
+            draw_curve(page, px0, py, px_mid_1, py, -0.2 * sign);
+            draw_curve(page, px_mid_1, py, px_mid, py + sign * tab_size * magnitude, magnitude * sign);
+            draw_curve(page, px_mid, py + sign * tab_size * magnitude, px_mid_2, py, magnitude * sign);
+            draw_curve(page, px_mid_2, py, px1, py, -0.2 * sign);
+            HPDF_Page_Stroke(page);
+        }
+    }
+
+    // 縦線を描く。
+    for (INT iColumn = 1; iColumn < columns; ++iColumn)
+    {
+        for (INT iRow = 0; iRow < rows; ++iRow)
+        {
+            int sign = (std::rand() & 1) ? -1 : 1;
+            double tab_size = ((4 + std::rand() % 2) / 5.0) * cell_width / 3;
+            double py0 = y + (iRow + 0) * cell_height;
+            double py1 = y + (iRow + 1) * cell_height;
+            double py_mid = (py0 + py1) / 2;
+            double py_mid_1 = (2 * py0 + 1 * py1) / 3;
+            double py_mid_2 = (1 * py0 + 2 * py1) / 3;
+            double px = x + iColumn * cell_width;
+            double magnitude = (2 + std::rand() % 2) * 0.2;
+            HPDF_Page_MoveTo(page, px, py0);
+            draw_curve(page, px, py0, px, py_mid_1, 0.2 * sign);
+            draw_curve(page, px, py_mid_1, px + sign * tab_size * magnitude, py_mid, -magnitude * sign);
+            draw_curve(page, px + sign * tab_size * magnitude, py_mid, px, py_mid_2, -magnitude * sign);
+            draw_curve(page, px, py_mid_2, px, py1, 0.2 * sign);
+            HPDF_Page_Stroke(page);
+        }
+    }
+}
+
 // メインディッシュ処理。
 string_t JigsawMaker::JustDoIt(HWND hwnd)
 {
@@ -820,14 +807,8 @@ string_t JigsawMaker::JustDoIt(HWND hwnd)
         // エンコーディング 90ms-RKSJ-H, 90ms-RKSJ-V, 90msp-RKSJ-H, EUC-H, EUC-V が利用可能となる
         HPDF_UseJPEncodings(pdf);
 
-#ifdef UTF8_SUPPORT
-        // エンコーディング "UTF-8" が利用可能に？？？
-        HPDF_UseUTFEncodings(pdf);
-        HPDF_SetCurrentEncoder(pdf, "UTF-8");
-#endif
-
         // 日本語フォントの MS-(P)Mincyo, MS-(P)Gothic が利用可能となる
-        //HPDF_UseJPFonts(pdf);
+        HPDF_UseJPFonts(pdf);
 
         // 用紙の向き。
         HPDF_PageDirection direction;
@@ -854,25 +835,7 @@ string_t JigsawMaker::JustDoIt(HWND hwnd)
             page_size = HPDF_PAGE_SIZE_A4;
 
         // フォント名。
-        string_t font_name;
-        if (m_font_map.size())
-        {
-            for (auto& entry : m_font_map)
-            {
-                auto ansi = ansi_from_wide(CP_ACP, entry.m_pathname.c_str());
-                if (entry.m_index != -1)
-                {
-                    std::string font_name_a = HPDF_LoadTTFontFromFile2(pdf, ansi, entry.m_index, HPDF_TRUE);
-                    font_name = wide_from_ansi(CP_UTF8, font_name_a.c_str());
-                }
-                else
-                {
-                    std::string font_name_a = HPDF_LoadTTFontFromFile(pdf, ansi, HPDF_TRUE);
-                    font_name = wide_from_ansi(CP_UTF8, font_name_a.c_str());
-                }
-                break;
-            }
-        }
+        string_t font_name = TEXT("MS-PGothic");
 
         // 外枠。
         auto frame_width_mm = _wtoi(SETTING(IDC_FRAME_WIDTH).c_str());
@@ -885,6 +848,7 @@ string_t JigsawMaker::JustDoIt(HWND hwnd)
         HPDF_Font font; // フォントオブジェクト。
         double page_width, page_height; // ページサイズ。
         double content_x, content_y, content_width, content_height; // ページ内容の位置とサイズ。
+        for (INT iPage = 0; iPage < 3; ++iPage)
         {
             // ページを追加する。
             page = HPDF_AddPage(pdf);
@@ -911,23 +875,47 @@ string_t JigsawMaker::JustDoIt(HWND hwnd)
             /* 塗りつぶしの色を RGB で設定する。PDF では RGB 各値を [0,1] で指定することになっている。*/
             HPDF_Page_SetRGBFill(page, 0, 0, 0);
 
-            // フォントを指定する。
-            auto font_name_a = ansi_from_wide(CP932, font_name.c_str());
-#ifdef UTF8_SUPPORT
-            font = HPDF_GetFont(pdf, font_name_a, "UTF-8");
-#else
-            font = HPDF_GetFont(pdf, font_name_a, "90ms-RKSJ-H");
-#endif
+            int rows = 8;
+            int columns = 8;
+            int seed = _wtoi(SETTING(IDC_RANDOM_SEED).c_str());
+
+            if (SETTING(IDC_BACKGROUND_IMAGE).size())
+            {
+                switch (iPage)
+                {
+                case 0:
+                    // 画像を描く。
+                    hpdf_draw_image(pdf, page, content_x, content_y, content_width, content_height,
+                                    SETTING(IDC_BACKGROUND_IMAGE));
+                    // カット線を描画する。
+                    hpdf_draw_cut_lines(pdf, page, content_x, content_y, content_width, content_height, rows, columns, seed);
+                    break;
+                case 1:
+                    // カット線を描画する。
+                    hpdf_draw_cut_lines(pdf, page, content_x, content_y, content_width, content_height, rows, columns, seed);
+                    break;
+                case 2:
+                    // 画像を描く。
+                    hpdf_draw_image(pdf, page, content_x, content_y, content_width, content_height,
+                                    SETTING(IDC_BACKGROUND_IMAGE));
+                    break;
+                }
+            }
+            else
+            {
+                // カット線を描画する。
+                hpdf_draw_cut_lines(pdf, page, content_x, content_y, content_width, content_height, rows, columns, seed);
+            }
 
 #ifndef NO_SHAREWARE
+            // フォントを指定する。
+            auto font_name_a = ansi_from_wide(CP932, font_name.c_str());
+            font = HPDF_GetFont(pdf, font_name_a, "90ms-RKSJ-H");
+
             // シェアウェア未登録ならば、ロゴ文字列を描画する。
             if (!g_shareware.IsRegistered())
             {
-#ifdef UTF8_SUPPORT
-                auto logo_a = ansi_from_wide(CP_UTF8, doLoadString(IDS_LOGO));
-#else
                 auto logo_a = ansi_from_wide(CP932, doLoadString(IDS_LOGO));
-#endif
                 double logo_x = content_x, logo_y = content_y;
 
                 // フォントとフォントサイズを指定。
@@ -942,9 +930,11 @@ string_t JigsawMaker::JustDoIt(HWND hwnd)
             }
 #endif
 
-            // 画像を描く。
-            hpdf_draw_image(pdf, page, content_x, content_y, content_width, content_height,
-                            TEXT("image.jpg"));
+            // 画像未指定ならば1ページのみ。
+            if (SETTING(IDC_BACKGROUND_IMAGE).empty())
+            {
+                break;
+            }
         }
 
         {

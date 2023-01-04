@@ -269,14 +269,13 @@ HBITMAP gpimage_load(LPCWSTR filename, int* width, int* height, float* dpi)
         // 画像のサイズを取得する
         int cx = image->GetWidth();
         int cy = image->GetHeight();
-
         if (width)
             *width = cx;
         if (height)
             *height = cy;
         if (dpi)
         {
-            // DPI 値を取得する
+            // DPI値を取得する。
             float xDpi = image->GetHorizontalResolution();
             float yDpi = image->GetVerticalResolution();
             *dpi = (xDpi + yDpi) / 2;

@@ -53,6 +53,7 @@ enum
     IDC_EXIT = IDCANCEL,
     IDC_PAGE_SIZE = cmb1,
     IDC_PAGE_DIRECTION = cmb2,
+    IDC_BACKGROUND_IMAGE = edt1,
 };
 
 // Susieプラグイン マネジャー。
@@ -1051,8 +1052,19 @@ void OnCommand(HWND hwnd, int id, HWND hwndCtl, UINT codeNotify)
 // ファイルがドロップされた。
 void OnDropFiles(HWND hwnd, HDROP hdrop)
 {
+    // ドロップ項目を取得する。
+    TCHAR szFile[MAX_PATH];
+    ::DragQueryFile(hdrop, 0, szFile, _countof(szFile));
+
+    // 通常のファイルならば
+    if (::PathFileExists(szFile) && !::PathIsDirectory(szFile))
+    {
+        // テキストボックスにテキストを設定。
+        ::SetDlgItemText(hwnd, IDC_BACKGROUND_IMAGE, szFile);
+    }
+
     // ドロップ完了。
-    DragFinish(hdrop);
+    ::DragFinish(hdrop);
 }
 
 // WM_DESTROY

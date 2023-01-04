@@ -28,9 +28,9 @@
         /* company registry key */      TEXT("Katayama Hirofumi MZ"),
         /* application registry key */  TEXT("DigitalJigsawMaker"),
         /* password hash */
-        "e218f83f070a186f886c6dc82bd7ecf3d6c3ea4224fd7d213aa06e9c9713b395",
+        "3f92983c7aff94d3f6d10fccec5205048958ed06f910232a04b124bdaaebe879",
         /* trial days */                10,
-        /* salt string */               "mJpDxx2D",
+        /* salt string */               "jade3YYyR1",
         /* version string */            "0.0.0");
 #endif
 

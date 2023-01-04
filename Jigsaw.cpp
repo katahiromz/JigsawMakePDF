@@ -55,6 +55,7 @@ enum
     IDC_PAGE_DIRECTION = cmb2,
     IDC_FRAME_WIDTH = cmb3,
     IDC_BACKGROUND_IMAGE = edt1,
+    IDC_ERASE_SETTINGS = psh2,
 };
 
 // Susieプラグイン マネジャー。
@@ -1058,6 +1059,9 @@ void OnCommand(HWND hwnd, int id, HWND hwndCtl, UINT codeNotify)
         break;
     case IDC_EXIT: // 「終了」ボタン。
         EndDialog(hwnd, id);
+        break;
+    case IDC_ERASE_SETTINGS: // 「設定の初期化」ボタン。
+        OnEraseSettings(hwnd);
         break;
     }
 }

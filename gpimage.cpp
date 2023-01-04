@@ -135,44 +135,14 @@ BOOL gpimage_get_encoder_from_filename(LPCWSTR filename, CLSID *pClsid)
     return FALSE;
 }
 
-// ファイルの日付を取得する（撮影日時を除く）。
-BOOL gpimage_load_datetime(LPCWSTR filename, FILETIME* pftCreated, FILETIME* pftModified)
-{
-    if (pftCreated)
-        ZeroMemory(pftCreated, sizeof(*pftCreated));
-    if (pftModified)
-        ZeroMemory(pftModified, sizeof(*pftModified));
-
-    // ファイルの日時を読み込む。
-    WIN32_FIND_DATA find;
-    HANDLE hFind = FindFirstFile(filename, &find);
-    if (hFind != INVALID_HANDLE_VALUE)
-    {
-        FindClose(hFind);
-        // ファイル作成日時を取得する。
-        if (pftCreated)
-            ::FileTimeToLocalFileTime(&find.ftCreationTime, pftCreated);
-        // ファイル更新日時を取得する。
-        if (pftModified)
-            ::FileTimeToLocalFileTime(&find.ftLastWriteTime, pftModified);
-        return TRUE;
-    }
-
-    return FALSE;
-}
-
 // カーソルファイル(*.cur)をHBITMAPとして読み込む。
-HBITMAP gpimage_load_cursor(LPCWSTR filename, int* width, int* height, FILETIME* pftCreated, FILETIME* pftModified)
+HBITMAP gpimage_load_cursor(LPCWSTR filename, int* width, int* height)
 {
     // 初期化する。
     if (width)
         *width = 0;
     if (height)
         *height = 0;
-    if (pftCreated)
-        ZeroMemory(pftCreated, sizeof(*pftCreated));
-    if (pftModified)
-        ZeroMemory(pftModified, sizeof(*pftModified));
 
     // カーソルファイルを読み込む。
     HCURSOR hCursor = ::LoadCursorFromFile(filename);
@@ -226,9 +196,6 @@ HBITMAP gpimage_load_cursor(LPCWSTR filename, int* width, int* height, FILETIME*
         SelectObject(hdc, hbmOld);
     }
 
-    // ファイルの日時を読み込む。
-    gpimage_load_datetime(filename, pftCreated, pftModified);
-
     // DCを破棄する。
     DeleteDC(hdc);
 
@@ -236,12 +203,16 @@ HBITMAP gpimage_load_cursor(LPCWSTR filename, int* width, int* height, FILETIME*
 }
 
 // 画像をHBITMAPとして読み込む。
-HBITMAP gpimage_load(LPCWSTR filename, int* width, int* height, FILETIME* pftCreated, FILETIME* pftModified)
+HBITMAP gpimage_load(LPCWSTR filename, int* width, int* height, float* dpi)
 {
+    // DPI値を初期化する。
+    if (dpi)
+        *dpi = 0;
+
     // カーソルの拡張子ならばカーソルとして読み込む。
     if (lstrcmpiW(PathFindExtensionW(filename), L".cur") == 0)
     {
-        return gpimage_load_cursor(filename, width, height, pftCreated, pftModified);
+        return gpimage_load_cursor(filename, width, height);
     }
 
     HBITMAP hBitmap = NULL;
@@ -262,61 +233,6 @@ HBITMAP gpimage_load(LPCWSTR filename, int* width, int* height, FILETIME* pftCre
                     orientation = *(int*)propertyItem->value;
                     free(propertyItem);
                 }
-            }
-        }
-
-        // 画像の撮影日時または作成日時を取得する。
-        if (pftCreated)
-        {
-            ZeroMemory(pftCreated, sizeof(*pftCreated));
-            BOOL found = FALSE;
-
-            // EXIFから撮影日時の取得を試みる。
-            UINT size = image->GetPropertyItemSize(PropertyTagExifDTOrig);
-            if (PropertyItem* propertyItem = (PropertyItem*)malloc(size))
-            {
-                image->GetPropertyItem(PropertyTagExifDTOrig, size, propertyItem);
-                if (propertyItem->type == PropertyTagTypeASCII)
-                {
-                    // 「YYYY:MM:DD HH:MM:SS」
-                    auto datetime = (const char*)propertyItem->value;
-                    SYSTEMTIME st;
-                    st.wYear = (WORD)atoi(&datetime[0]);
-                    st.wMonth = (WORD)atoi(&datetime[5]);
-                    st.wDay = (WORD)atoi(&datetime[8]);
-                    st.wHour = (WORD)atoi(&datetime[11]);
-                    st.wMinute = (WORD)atoi(&datetime[14]);
-                    st.wSecond = (WORD)atoi(&datetime[17]);
-                    st.wMilliseconds = 0;
-                    if (::SystemTimeToFileTime(&st, pftCreated))
-                        found = TRUE;
-                }
-                free(propertyItem);
-            }
-
-            // 取得できなければ、ファイル作成日時を取得する。
-            if (!found)
-            {
-                WIN32_FIND_DATAW find;
-                HANDLE hFind = FindFirstFileW(filename, &find);
-                if (hFind != INVALID_HANDLE_VALUE)
-                {
-                    FindClose(hFind);
-                    ::FileTimeToLocalFileTime(&find.ftCreationTime, pftCreated);
-                }
-            }
-        }
-
-        // ファイル更新日時を取得する。
-        if (pftModified)
-        {
-            ZeroMemory(pftModified, sizeof(*pftModified));
-            WIN32_FIND_DATAW find;
-            HANDLE hFind = ::FindFirstFileW(filename, &find);
-            if (hFind != INVALID_HANDLE_VALUE)
-            {
-                ::FindClose(hFind);
-                ::FileTimeToLocalFileTime(&find.ftLastWriteTime, pftModified);
             }
         }
 
@@ -358,6 +274,13 @@ HBITMAP gpimage_load(LPCWSTR filename, int* width, int* height, FILETIME* pftCre
             *width = cx;
         if (height)
             *height = cy;
+        if (dpi)
+        {
+            // DPI 値を取得する
+            float xDpi = image->GetHorizontalResolution();
+            float yDpi = image->GetVerticalResolution();
+            *dpi = (xDpi + yDpi) / 2;
+        }
 
         // HBITMAPを作成する
         BITMAPINFO bmi;
@@ -397,7 +320,7 @@ HBITMAP gpimage_load(LPCWSTR filename, int* width, int* height, FILETIME* pftCre
 }
 
 // HBITMAPを画像ファイルとして保存する。
-BOOL gpimage_save(LPCWSTR filename, HBITMAP hBitmap)
+BOOL gpimage_save(LPCWSTR filename, HBITMAP hBitmap, float dpi)
 {
     BOOL ret = FALSE;
 
@@ -408,6 +331,9 @@ BOOL gpimage_save(LPCWSTR filename, HBITMAP hBitmap)
     // HBITMAP を GDI+ の Bitmap に変換する
     if (Bitmap* pBitmap = Bitmap::FromHBITMAP(hBitmap, NULL))
     {
+        // DPI値を設定する。
+        pBitmap->SetResolution(dpi, dpi);
+
         // 保存する
         if (pBitmap->Save(filename, &clsid, NULL) == Ok)
         {

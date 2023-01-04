@@ -54,7 +54,10 @@ enum
     IDC_PAGE_SIZE = cmb1,
     IDC_PAGE_DIRECTION = cmb2,
     IDC_FRAME_WIDTH = cmb3,
+    IDC_PIECE_WIDTH = cmb4,
+    IDC_PIECE_HEIGHT = cmb5,
     IDC_BACKGROUND_IMAGE = edt1,
+    IDC_BROWSE = psh1,
     IDC_ERASE_SETTINGS = psh2,
 };
 
@@ -434,6 +437,8 @@ JigsawMaker::JigsawMaker(HINSTANCE hInstance, INT argc, LPTSTR *argv)
 #define IDC_PAGE_SIZE_DEFAULT doLoadString(IDS_A4)
 #define IDC_PAGE_DIRECTION_DEFAULT doLoadString(IDS_LANDSCAPE)
 #define IDC_FRAME_WIDTH_DEFAULT TEXT("10")
+#define IDC_PIECE_WIDTH_DEFAULT TEXT("30")
+#define IDC_PIECE_HEIGHT_DEFAULT TEXT("30")
 
 // データをリセットする。
 void JigsawMaker::Reset()
@@ -442,6 +447,8 @@ void JigsawMaker::Reset()
     SETTING(IDC_PAGE_SIZE) = IDC_PAGE_SIZE_DEFAULT;
     SETTING(IDC_PAGE_DIRECTION) = IDC_PAGE_DIRECTION_DEFAULT;
     SETTING(IDC_FRAME_WIDTH) = IDC_FRAME_WIDTH_DEFAULT;
+    SETTING(IDC_PIECE_WIDTH) = IDC_PIECE_WIDTH_DEFAULT;
+    SETTING(IDC_PIECE_HEIGHT) = IDC_PIECE_HEIGHT_DEFAULT;
 }
 
 // ダイアログを初期化する。
@@ -462,6 +469,16 @@ void JigsawMaker::InitDialog(HWND hwnd)
     SendDlgItemMessage(hwnd, IDC_FRAME_WIDTH, CB_ADDSTRING, 0, (LPARAM)TEXT("0"));
     SendDlgItemMessage(hwnd, IDC_FRAME_WIDTH, CB_ADDSTRING, 0, (LPARAM)TEXT("10"));
     SendDlgItemMessage(hwnd, IDC_FRAME_WIDTH, CB_ADDSTRING, 0, (LPARAM)TEXT("15"));
+
+    // IDC_PIECE_WIDTH: ピースの幅(mm)。
+    SendDlgItemMessage(hwnd, IDC_PIECE_WIDTH, CB_ADDSTRING, 0, (LPARAM)TEXT("30"));
+    SendDlgItemMessage(hwnd, IDC_PIECE_WIDTH, CB_ADDSTRING, 0, (LPARAM)TEXT("40"));
+    SendDlgItemMessage(hwnd, IDC_PIECE_WIDTH, CB_ADDSTRING, 0, (LPARAM)TEXT("50"));
+
+    // IDC_PIECE_HEIGHT: ピースの高さ(mm)。
+    SendDlgItemMessage(hwnd, IDC_PIECE_HEIGHT, CB_ADDSTRING, 0, (LPARAM)TEXT("30"));
+    SendDlgItemMessage(hwnd, IDC_PIECE_HEIGHT, CB_ADDSTRING, 0, (LPARAM)TEXT("40"));
+    SendDlgItemMessage(hwnd, IDC_PIECE_HEIGHT, CB_ADDSTRING, 0, (LPARAM)TEXT("50"));
 }
 
 // ダイアログからデータへ。
@@ -478,6 +495,8 @@ BOOL JigsawMaker::DataFromDialog(HWND hwnd)
     GET_COMBO_DATA(IDC_PAGE_SIZE);
     GET_COMBO_DATA(IDC_PAGE_DIRECTION);
     GET_COMBO_DATA(IDC_FRAME_WIDTH);
+    GET_COMBO_DATA(IDC_PIECE_WIDTH);
+    GET_COMBO_DATA(IDC_PIECE_HEIGHT);
 #undef GET_COMBO_DATA
 
     // チェックボックスからデータを取得する。
@@ -501,6 +520,8 @@ BOOL JigsawMaker::DialogFromData(HWND hwnd)
     SET_COMBO_DATA(IDC_PAGE_SIZE);
     SET_COMBO_DATA(IDC_PAGE_DIRECTION);
     SET_COMBO_DATA(IDC_FRAME_WIDTH);
+    SET_COMBO_DATA(IDC_PIECE_WIDTH);
+    SET_COMBO_DATA(IDC_PIECE_HEIGHT);
 #undef SET_COMBO_DATA
 
     // チェックボックスへデータを設定する。
@@ -537,6 +558,8 @@ BOOL JigsawMaker::DataFromReg(HWND hwnd)
     GET_REG_DATA(IDC_PAGE_SIZE);
     GET_REG_DATA(IDC_PAGE_DIRECTION);
     GET_REG_DATA(IDC_FRAME_WIDTH);
+    GET_REG_DATA(IDC_PIECE_WIDTH);
+    GET_REG_DATA(IDC_PIECE_HEIGHT);
 #undef GET_REG_DATA
 
     // レジストリキーを閉じる。
@@ -571,6 +594,8 @@ BOOL JigsawMaker::RegFromData(HWND hwnd)
     SET_REG_DATA(IDC_PAGE_SIZE);
     SET_REG_DATA(IDC_PAGE_DIRECTION);
     SET_REG_DATA(IDC_FRAME_WIDTH);
+    SET_REG_DATA(IDC_PIECE_WIDTH);
+    SET_REG_DATA(IDC_PIECE_HEIGHT);
 #undef SET_REG_DATA
 
     // レジストリキーを閉じる。
@@ -1048,6 +1073,72 @@ void OnEraseSettings(HWND hwnd)
     pJM->RegFromData(hwnd);
 }
 
+// 「参照...」ボタン。
+void OnBrowse(HWND hwnd)
+{
+    // テキストを取得する。前後の空白を取り除く。
+    TCHAR szFile[MAX_PATH];
+    GetDlgItemText(hwnd, IDC_BACKGROUND_IMAGE, szFile, _countof(szFile));
+    str_trim(szFile);
+
+    // ファイルでなければテキストをクリア。
+    if (!PathFileExists(szFile))
+    {
+        szFile[0] = 0;
+    }
+
+    OPENFILENAME ofn = { sizeof(ofn), hwnd };
+
+    // フィルター文字列をリソースから読み込む。
+    string_t strFilter = doLoadString(IDS_OPENFILTER);
+
+    // Susieプラグインのサポート。
+    if (g_susie.is_loaded())
+    {
+        std::string additional = g_susie.get_filter();
+        auto wide = wide_from_ansi(CP_ACP, additional.c_str());
+        strFilter += doLoadString(IDS_SUSIE_IMAGES);
+        strFilter += L" (";
+        strFilter += wide;
+        strFilter += L")|";
+        strFilter += wide;
+        strFilter += L"|";
+    }
+
+    // フィルター文字列をNULL区切りにする。
+    for (auto& ch : strFilter)
+    {
+        if (ch == TEXT('|'))
+            ch = 0;
+    }
+
+    // フィルター文字列を指定。
+    ofn.lpstrFilter = strFilter.c_str();
+
+    // ファイルを指定。
+    ofn.lpstrFile = szFile;
+    ofn.nMaxFile = _countof(szFile);
+
+    // 初期フォルダを指定。
+    TCHAR szDir[MAX_PATH];
+    SHGetSpecialFolderPath(hwnd, szDir, CSIDL_MYPICTURES, FALSE);
+    ofn.lpstrInitialDir = szDir;
+
+    // タイトルを設定。
+    string_t title = doLoadString(IDS_SET_BACKGROUND_IMAGE);
+    ofn.lpstrTitle = title.c_str();
+
+    ofn.Flags = OFN_EXPLORER | OFN_ENABLESIZING | OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_HIDEREADONLY;
+    ofn.lpstrDefExt = TEXT("JPG");
+
+    // ユーザーにファイルを選択してもらう。
+    if (::GetOpenFileName(&ofn))
+    {
+        // テキストを設定。
+        ::SetDlgItemText(hwnd, IDC_BACKGROUND_IMAGE, szFile);
+    }
+}
+
 // WM_COMMAND
 // コマンド。
 void OnCommand(HWND hwnd, int id, HWND hwndCtl, UINT codeNotify)
@@ -1059,6 +1150,9 @@ void OnCommand(HWND hwnd, int id, HWND hwndCtl, UINT codeNotify)
         break;
     case IDC_EXIT: // 「終了」ボタン。
         EndDialog(hwnd, id);
+        break;
+    case IDC_BROWSE: // 「参照...」ボタン。
+        OnBrowse(hwnd);
         break;
     case IDC_ERASE_SETTINGS: // 「設定の初期化」ボタン。
         OnEraseSettings(hwnd);

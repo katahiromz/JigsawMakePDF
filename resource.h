@@ -18,6 +18,9 @@
 #define IDS_COPYFILEFAILED                  112
 #define IDS_SUCCEEDED                       113
 #define IDS_PROCESSINGNOW                   114
+#define IDS_OPENFILTER                      115
+#define IDS_SET_BACKGROUND_IMAGE            116
+#define IDS_SUSIE_IMAGES                    117
 
 #ifdef APSTUDIO_INVOKED
     #ifndef APSTUDIO_READONLY_SYMBOLS

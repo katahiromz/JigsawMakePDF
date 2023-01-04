@@ -87,7 +87,7 @@ STRINGTABLE
 {
     IDS_APPNAME, "デジタルジグソーメーカー"
     IDS_GENERATE, "生成"
-    IDS_INVALIDSTRING, "不正な文字列です。"
+    IDS_INVALIDSTRING, "「%s」が不正な文字列です。\n\n%s"
     IDS_TEXTTOOLONG, "(テキストが長すぎます)"
     IDS_A3, "A3 用紙"
     IDS_A4, "A4 用紙"
@@ -97,9 +97,12 @@ STRINGTABLE
     IDS_PORTRAIT, "縦向き"
     IDS_LANDSCAPE, "横向き"
     IDS_LOGO, "「ジグソーメーカー」買ってね"
-    IDS_COPYFILEFAILED, "ファイルのコピーに失敗しました。"
-    IDS_SUCCEEDED, "成功しました。"
+    IDS_COPYFILEFAILED, "デスクトップへのファイルのコピーに失敗しました"
+    IDS_SUCCEEDED, "デスクトップにフォルダ「%s」を作成しました。"
     IDS_PROCESSINGNOW, "生成中..."
+    IDS_OPENFILTER, "画像ファイル (*.jpg;*.gif;*.png;*.tif;*.bmp;*.wmf;*.emf;*.ico;*.cur)|*.jpg;*.jpeg;*.jpe;*.jfif;*.gif;*.png;*.tif;*.tiff;*.bmp;*.dib;*.wmf;*.emf;*.ico;*.cur|JPEG 画像 (*.jpg;*.jpeg;*.jpe;*.jfif)|*.jpg;*.jpeg;*.jpe;*.jfif|GIF 画像 (*.gif)|*.gif|PNG 画像 (*.png)|*.png|TIFF 画像 (*.tif;*.tiff)|*.tif;*.tiff|ビットマップ (*.bmp;*.dib)|*.bmp;*.dib|WMF (*.wmf)|*.wmf|EMF (*.emf)|*.emf|アイコン ファイル (*.ico)|*.ico|カーソル ファイル (*.cur)|*.cur|すべてのファイル (*.*)|*.*|"
+    IDS_SET_BACKGROUND_IMAGE, "背景画像ファイルを指定"
+    IDS_SUSIE_IMAGES, "Susie 画像ファイル"
 }
 
 //////////////////////////////////////////////////////////////////////////////

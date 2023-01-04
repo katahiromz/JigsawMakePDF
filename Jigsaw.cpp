@@ -57,6 +57,8 @@ enum
     IDC_PIECE_WIDTH = cmb4,
     IDC_PIECE_HEIGHT = cmb5,
     IDC_BACKGROUND_IMAGE = edt1,
+    IDC_RANDOM_SEED = edt2,
+    IDC_RANDOWM_SEED_UPDOWN = scr1,
     IDC_BROWSE = psh1,
     IDC_ERASE_SETTINGS = psh2,
 };
@@ -439,6 +441,7 @@ JigsawMaker::JigsawMaker(HINSTANCE hInstance, INT argc, LPTSTR *argv)
 #define IDC_FRAME_WIDTH_DEFAULT TEXT("10")
 #define IDC_PIECE_WIDTH_DEFAULT TEXT("30")
 #define IDC_PIECE_HEIGHT_DEFAULT TEXT("30")
+#define IDC_RANDOM_SEED_DEFAULT TEXT("0")
 
 // データをリセットする。
 void JigsawMaker::Reset()
@@ -449,6 +452,7 @@ void JigsawMaker::Reset()
     SETTING(IDC_FRAME_WIDTH) = IDC_FRAME_WIDTH_DEFAULT;
     SETTING(IDC_PIECE_WIDTH) = IDC_PIECE_WIDTH_DEFAULT;
     SETTING(IDC_PIECE_HEIGHT) = IDC_PIECE_HEIGHT_DEFAULT;
+    SETTING(IDC_RANDOM_SEED) = IDC_RANDOM_SEED_DEFAULT;
 }
 
 // ダイアログを初期化する。
@@ -479,6 +483,9 @@ void JigsawMaker::InitDialog(HWND hwnd)
     SendDlgItemMessage(hwnd, IDC_PIECE_HEIGHT, CB_ADDSTRING, 0, (LPARAM)TEXT("30"));
     SendDlgItemMessage(hwnd, IDC_PIECE_HEIGHT, CB_ADDSTRING, 0, (LPARAM)TEXT("40"));
     SendDlgItemMessage(hwnd, IDC_PIECE_HEIGHT, CB_ADDSTRING, 0, (LPARAM)TEXT("50"));
+
+    // IDC_RANDOWM_SEED_UPDOWN: 乱数の種のスピンコントロール。
+    SendDlgItemMessage(hwnd, IDC_RANDOWM_SEED_UPDOWN, UDM_SETRANGE, 0, MAKELPARAM(0x7FFF, 0));
 }
 
 // ダイアログからデータへ。
@@ -498,6 +505,10 @@ BOOL JigsawMaker::DataFromDialog(HWND hwnd)
     GET_COMBO_DATA(IDC_PIECE_WIDTH);
     GET_COMBO_DATA(IDC_PIECE_HEIGHT);
 #undef GET_COMBO_DATA
+
+    ::GetDlgItemText(hwnd, IDC_RANDOM_SEED, szText, _countof(szText));
+    str_trim(szText);
+    SETTING(IDC_RANDOM_SEED) = szText;
 
     // チェックボックスからデータを取得する。
 #define GET_CHECK_DATA(id) do { \
@@ -523,6 +534,8 @@ BOOL JigsawMaker::DialogFromData(HWND hwnd)
     SET_COMBO_DATA(IDC_PIECE_WIDTH);
     SET_COMBO_DATA(IDC_PIECE_HEIGHT);
 #undef SET_COMBO_DATA
+
+    SetDlgItemText(hwnd, IDC_RANDOM_SEED, SETTING(IDC_RANDOM_SEED).c_str());
 
     // チェックボックスへデータを設定する。
 #define SET_CHECK_DATA(id) do { \
@@ -560,6 +573,7 @@ BOOL JigsawMaker::DataFromReg(HWND hwnd)
     GET_REG_DATA(IDC_FRAME_WIDTH);
     GET_REG_DATA(IDC_PIECE_WIDTH);
     GET_REG_DATA(IDC_PIECE_HEIGHT);
+    GET_REG_DATA(IDC_RANDOM_SEED);
 #undef GET_REG_DATA
 
     // レジストリキーを閉じる。
@@ -596,6 +610,7 @@ BOOL JigsawMaker::RegFromData(HWND hwnd)
     SET_REG_DATA(IDC_FRAME_WIDTH);
     SET_REG_DATA(IDC_PIECE_WIDTH);
     SET_REG_DATA(IDC_PIECE_HEIGHT);
+    SET_REG_DATA(IDC_RANDOM_SEED);
 #undef SET_REG_DATA
 
     // レジストリキーを閉じる。
@@ -1156,6 +1171,42 @@ void OnCommand(HWND hwnd, int id, HWND hwndCtl, UINT codeNotify)
         break;
     case IDC_ERASE_SETTINGS: // 「設定の初期化」ボタン。
         OnEraseSettings(hwnd);
+        break;
+    case stc1:
+        // コンボボックスの前のラベルをクリックしたら、対応するコンボボックスにフォーカスを当てる。
+        ::SetFocus(::GetDlgItem(hwnd, cmb1));
+        break;
+    case stc2:
+        // コンボボックスの前のラベルをクリックしたら、対応するコンボボックスにフォーカスを当てる。
+        ::SetFocus(::GetDlgItem(hwnd, cmb2));
+        break;
+    case stc3:
+        // コンボボックスの前のラベルをクリックしたら、対応するコンボボックスにフォーカスを当てる。
+        ::SetFocus(::GetDlgItem(hwnd, cmb3));
+        break;
+    case stc4:
+        // コンボボックスの前のラベルをクリックしたら、対応するコンボボックスにフォーカスを当てる。
+        ::SetFocus(::GetDlgItem(hwnd, cmb4));
+        break;
+    case stc5:
+        // コンボボックスの前のラベルをクリックしたら、対応するコンボボックスにフォーカスを当てる。
+        ::SetFocus(::GetDlgItem(hwnd, cmb5));
+        break;
+    case stc6:
+        // テキストボックスの前のラベルをクリックしたら、対応するテキストボックスにフォーカスを当てる。
+        {
+            HWND hEdit = ::GetDlgItem(hwnd, edt1);
+            Edit_SetSel(hEdit, 0, -1); // すべて選択。
+            ::SetFocus(hEdit);
+        }
+        break;
+    case stc7:
+        // テキストボックスの前のラベルをクリックしたら、対応するテキストボックスにフォーカスを当てる。
+        {
+            HWND hEdit = ::GetDlgItem(hwnd, edt2);
+            Edit_SetSel(hEdit, 0, -1); // すべて選択。
+            ::SetFocus(hEdit);
+        }
         break;
     }
 }

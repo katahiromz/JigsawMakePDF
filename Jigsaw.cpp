@@ -53,6 +53,7 @@ enum
     IDC_EXIT = IDCANCEL,
     IDC_PAGE_SIZE = cmb1,
     IDC_PAGE_DIRECTION = cmb2,
+    IDC_FRAME_WIDTH = cmb3,
     IDC_BACKGROUND_IMAGE = edt1,
 };
 
@@ -431,6 +432,7 @@ JigsawMaker::JigsawMaker(HINSTANCE hInstance, INT argc, LPTSTR *argv)
 // 既定値。
 #define IDC_PAGE_SIZE_DEFAULT doLoadString(IDS_A4)
 #define IDC_PAGE_DIRECTION_DEFAULT doLoadString(IDS_LANDSCAPE)
+#define IDC_FRAME_WIDTH_DEFAULT TEXT("10")
 
 // データをリセットする。
 void JigsawMaker::Reset()
@@ -438,6 +440,7 @@ void JigsawMaker::Reset()
 #define SETTING(id) m_settings[TEXT(#id)]
     SETTING(IDC_PAGE_SIZE) = IDC_PAGE_SIZE_DEFAULT;
     SETTING(IDC_PAGE_DIRECTION) = IDC_PAGE_DIRECTION_DEFAULT;
+    SETTING(IDC_FRAME_WIDTH) = IDC_FRAME_WIDTH_DEFAULT;
 }
 
 // ダイアログを初期化する。
@@ -453,6 +456,11 @@ void JigsawMaker::InitDialog(HWND hwnd)
     // IDC_PAGE_DIRECTION: ページの向き。
     SendDlgItemMessage(hwnd, IDC_PAGE_DIRECTION, CB_ADDSTRING, 0, (LPARAM)doLoadString(IDS_PORTRAIT));
     SendDlgItemMessage(hwnd, IDC_PAGE_DIRECTION, CB_ADDSTRING, 0, (LPARAM)doLoadString(IDS_LANDSCAPE));
+
+    // IDC_FRAME_WIDTH: 外枠(mm)。
+    SendDlgItemMessage(hwnd, IDC_FRAME_WIDTH, CB_ADDSTRING, 0, (LPARAM)TEXT("0"));
+    SendDlgItemMessage(hwnd, IDC_FRAME_WIDTH, CB_ADDSTRING, 0, (LPARAM)TEXT("10"));
+    SendDlgItemMessage(hwnd, IDC_FRAME_WIDTH, CB_ADDSTRING, 0, (LPARAM)TEXT("15"));
 }
 
 // ダイアログからデータへ。
@@ -468,6 +476,7 @@ BOOL JigsawMaker::DataFromDialog(HWND hwnd)
 } while (0)
     GET_COMBO_DATA(IDC_PAGE_SIZE);
     GET_COMBO_DATA(IDC_PAGE_DIRECTION);
+    GET_COMBO_DATA(IDC_FRAME_WIDTH);
 #undef GET_COMBO_DATA
 
     // チェックボックスからデータを取得する。
@@ -490,6 +499,7 @@ BOOL JigsawMaker::DialogFromData(HWND hwnd)
     setComboText(hwnd, (id), m_settings[TEXT(#id)].c_str());
     SET_COMBO_DATA(IDC_PAGE_SIZE);
     SET_COMBO_DATA(IDC_PAGE_DIRECTION);
+    SET_COMBO_DATA(IDC_FRAME_WIDTH);
 #undef SET_COMBO_DATA
 
     // チェックボックスへデータを設定する。
@@ -525,6 +535,7 @@ BOOL JigsawMaker::DataFromReg(HWND hwnd)
 } while(0)
     GET_REG_DATA(IDC_PAGE_SIZE);
     GET_REG_DATA(IDC_PAGE_DIRECTION);
+    GET_REG_DATA(IDC_FRAME_WIDTH);
 #undef GET_REG_DATA
 
     // レジストリキーを閉じる。
@@ -558,6 +569,7 @@ BOOL JigsawMaker::RegFromData(HWND hwnd)
 } while(0)
     SET_REG_DATA(IDC_PAGE_SIZE);
     SET_REG_DATA(IDC_PAGE_DIRECTION);
+    SET_REG_DATA(IDC_FRAME_WIDTH);
 #undef SET_REG_DATA
 
     // レジストリキーを閉じる。
@@ -821,8 +833,10 @@ string_t JigsawMaker::JustDoIt(HWND hwnd)
             }
         }
 
-        // 余白。
-        double margin = pixels_from_mm(0);
+        // 外枠。
+        auto frame_width_mm = _wtoi(SETTING(IDC_FRAME_WIDTH).c_str());
+        auto frame_width_pixels = pixels_from_mm(frame_width_mm);
+
         // 線の太さ。
         double border_width = pixels_from_mm(1);
 
@@ -842,10 +856,10 @@ string_t JigsawMaker::JustDoIt(HWND hwnd)
             page_height = HPDF_Page_GetHeight(page);
 
             // ページ内容の位置とサイズ。
-            content_x = margin;
-            content_y = margin;
-            content_width = page_width - margin * 2;
-            content_height = page_height - margin * 2;
+            content_x = frame_width_pixels;
+            content_y = frame_width_pixels;
+            content_width = page_width - frame_width_pixels * 2;
+            content_height = page_height - frame_width_pixels * 2;
 
             // 線の幅を指定。
             HPDF_Page_SetLineWidth(page, border_width);

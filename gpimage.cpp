@@ -330,8 +330,11 @@ BOOL gpimage_save(LPCWSTR filename, HBITMAP hBitmap, float dpi)
     // HBITMAP を GDI+ の Bitmap に変換する
     if (Bitmap* pBitmap = Bitmap::FromHBITMAP(hBitmap, NULL))
     {
-        // DPI値を設定する。
-        pBitmap->SetResolution(dpi, dpi);
+        if (dpi > 0)
+        {
+            // DPI値を設定する。
+            pBitmap->SetResolution(dpi, dpi);
+        }
 
         // 保存する
         if (pBitmap->Save(filename, &clsid, NULL) == Ok)

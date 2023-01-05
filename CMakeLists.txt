@@ -55,6 +55,9 @@ set(LIBHPDF_STATIC ON)
 add_subdirectory(libharu)
 include_directories(libharu/include)
 
+# color_value
+include_directories(color_value)
+
 # Jigsaw.exe
 add_executable(Jigsaw WIN32 Jigsaw.cpp Jigsaw_res.rc gpimage.cpp Shareware.cpp SHA-256.cpp)
 target_link_libraries(Jigsaw comctl32 shlwapi gdiplus hpdf ${PNG_LIBRARY} ${ZLIB_LIBRARY})

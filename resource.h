@@ -28,6 +28,9 @@
 #define IDS_REASON_POSITIVE_REAL            122
 #define IDS_BACKGROUND                      123
 #define IDS_REASON_VALID_IMAGE              124
+#define IDS_FIELD_TEXT_COLOR                125
+#define IDS_REASON_VALID_COLOR              126
+#define IDS_CANT_LOAD_IMAGE                 127
 
 #ifdef APSTUDIO_INVOKED
     #ifndef APSTUDIO_READONLY_SYMBOLS

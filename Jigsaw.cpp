@@ -18,6 +18,7 @@
 #include "TempFile.hpp"     // 一時ファイル操作用のヘッダ。
 #include "gpimage.hpp"      // GDI+を用いた画像ファイル入出力ライブラリ。
 #include "Susie.hpp"        // Susieプラグインサポート。
+#include "color_value.h"    // color_valueライブラリのヘッダ。
 #include "MT.h"             // メルセンヌツイスター乱数生成器。
 #include "resource.h"       // リソースIDの定義ヘッダ。
 
@@ -54,12 +55,13 @@ enum
     IDC_PAGE_DIRECTION = cmb2,
     IDC_FRAME_WIDTH = cmb3,
     IDC_PIECE_SIZE = cmb4,
-    IDC_PIECE_SHAPE = cmb5,
     IDC_BACKGROUND_IMAGE = edt1,
     IDC_RANDOM_SEED = edt2,
     IDC_RANDOWM_SEED_UPDOWN = scr1,
     IDC_BROWSE = psh1,
     IDC_ERASE_SETTINGS = psh2,
+    IDC_LINE_COLOR = edt8,
+    IDC_LINE_COLOR_BUTTON = psh8,
 };
 
 // Susieプラグイン マネジャー。
@@ -348,9 +350,9 @@ JigsawMake::JigsawMake(HINSTANCE hInstance, INT argc, LPTSTR *argv)
 #define IDC_PAGE_DIRECTION_DEFAULT doLoadString(IDS_LANDSCAPE)
 #define IDC_FRAME_WIDTH_DEFAULT TEXT("10")
 #define IDC_PIECE_SIZE_DEFAULT TEXT("3.0")
-#define IDC_PIECE_SHAPE_DEFAULT doLoadString(IDS_NORMAL_SHAPE)
 #define IDC_RANDOM_SEED_DEFAULT TEXT("0")
 #define IDC_BACKGROUND_IMAGE_DEFAULT TEXT("")
+#define IDC_LINE_COLOR_DEFAULT TEXT("#FF0080")
 
 // データをリセットする。
 void JigsawMake::Reset()
@@ -360,9 +362,9 @@ void JigsawMake::Reset()
     SETTING(IDC_PAGE_DIRECTION) = IDC_PAGE_DIRECTION_DEFAULT;
     SETTING(IDC_FRAME_WIDTH) = IDC_FRAME_WIDTH_DEFAULT;
     SETTING(IDC_PIECE_SIZE) = IDC_PIECE_SIZE_DEFAULT;
-    SETTING(IDC_PIECE_SHAPE) = IDC_PIECE_SHAPE_DEFAULT;
     SETTING(IDC_RANDOM_SEED) = IDC_RANDOM_SEED_DEFAULT;
     SETTING(IDC_BACKGROUND_IMAGE) = IDC_BACKGROUND_IMAGE_DEFAULT;
+    SETTING(IDC_LINE_COLOR) = IDC_LINE_COLOR_DEFAULT;
 }
 
 // ダイアログを初期化する。
@@ -391,10 +393,6 @@ void JigsawMake::InitDialog(HWND hwnd)
     SendDlgItemMessage(hwnd, IDC_PIECE_SIZE, CB_ADDSTRING, 0, (LPARAM)TEXT("3.0"));
     SendDlgItemMessage(hwnd, IDC_PIECE_SIZE, CB_ADDSTRING, 0, (LPARAM)TEXT("4.0"));
 
-    // IDC_PIECE_SHAPE: ピースの形状。
-    SendDlgItemMessage(hwnd, IDC_PIECE_SHAPE, CB_ADDSTRING, 0, (LPARAM)doLoadString(IDS_NORMAL_SHAPE));
-    SendDlgItemMessage(hwnd, IDC_PIECE_SHAPE, CB_ADDSTRING, 0, (LPARAM)doLoadString(IDS_ABNORMAL_SHAPE));
-
     // IDC_RANDOWM_SEED_UPDOWN: 乱数の種のスピンコントロール。
     SendDlgItemMessage(hwnd, IDC_RANDOWM_SEED_UPDOWN, UDM_SETRANGE, 0, MAKELPARAM(0x7FFF, 0));
 }
@@ -414,7 +412,6 @@ BOOL JigsawMake::DataFromDialog(HWND hwnd)
     GET_COMBO_DATA(IDC_PAGE_DIRECTION);
     GET_COMBO_DATA(IDC_FRAME_WIDTH);
     GET_COMBO_DATA(IDC_PIECE_SIZE);
-    GET_COMBO_DATA(IDC_PIECE_SHAPE);
 #undef GET_COMBO_DATA
 
     auto piece_size = SETTING(IDC_PIECE_SIZE);
@@ -447,6 +444,26 @@ BOOL JigsawMake::DataFromDialog(HWND hwnd)
     }
     SETTING(IDC_BACKGROUND_IMAGE) = szText;
 
+    ::GetDlgItemText(hwnd, IDC_LINE_COLOR, szText, _countof(szText));
+    str_trim(szText);
+    if (szText[0] == 0)
+    {
+        m_settings[TEXT("IDC_LINE_COLOR")] = IDC_LINE_COLOR_DEFAULT;
+        ::SetFocus(::GetDlgItem(hwnd, IDC_LINE_COLOR));
+        OnInvalidString(hwnd, IDC_LINE_COLOR, IDS_FIELD_TEXT_COLOR, IDS_REASON_EMPTY_STRING);
+        return FALSE;
+    }
+    auto ansi = ansi_from_wide(CP_ACP, szText);
+    auto color_value = color_value_parse(ansi);
+    if (color_value == -1)
+    {
+        m_settings[TEXT("IDC_LINE_COLOR")] = IDC_LINE_COLOR_DEFAULT;
+        ::SetFocus(::GetDlgItem(hwnd, IDC_LINE_COLOR));
+        OnInvalidString(hwnd, IDC_LINE_COLOR, IDS_FIELD_TEXT_COLOR, IDS_REASON_VALID_COLOR);
+        return FALSE;
+    }
+    m_settings[TEXT("IDC_LINE_COLOR")] = szText;
+
     // チェックボックスからデータを取得する。
 #define GET_CHECK_DATA(id) do { \
     if (IsDlgButtonChecked(hwnd, id) == BST_CHECKED) \
@@ -469,11 +486,11 @@ BOOL JigsawMake::DialogFromData(HWND hwnd)
     SET_COMBO_DATA(IDC_PAGE_DIRECTION);
     SET_COMBO_DATA(IDC_FRAME_WIDTH);
     SET_COMBO_DATA(IDC_PIECE_SIZE);
-    SET_COMBO_DATA(IDC_PIECE_SHAPE);
 #undef SET_COMBO_DATA
 
     SetDlgItemText(hwnd, IDC_RANDOM_SEED, SETTING(IDC_RANDOM_SEED).c_str());
     SetDlgItemText(hwnd, IDC_BACKGROUND_IMAGE, SETTING(IDC_BACKGROUND_IMAGE).c_str());
+    SetDlgItemText(hwnd, IDC_LINE_COLOR, SETTING(IDC_LINE_COLOR).c_str());
 
     // チェックボックスへデータを設定する。
 #define SET_CHECK_DATA(id) do { \
@@ -510,9 +527,9 @@ BOOL JigsawMake::DataFromReg(HWND hwnd)
     GET_REG_DATA(IDC_PAGE_DIRECTION);
     GET_REG_DATA(IDC_FRAME_WIDTH);
     GET_REG_DATA(IDC_PIECE_SIZE);
-    GET_REG_DATA(IDC_PIECE_SHAPE);
     GET_REG_DATA(IDC_RANDOM_SEED);
     GET_REG_DATA(IDC_BACKGROUND_IMAGE);
+    GET_REG_DATA(IDC_LINE_COLOR);
 #undef GET_REG_DATA
 
     // レジストリキーを閉じる。
@@ -548,9 +565,9 @@ BOOL JigsawMake::RegFromData(HWND hwnd)
     SET_REG_DATA(IDC_PAGE_DIRECTION);
     SET_REG_DATA(IDC_FRAME_WIDTH);
     SET_REG_DATA(IDC_PIECE_SIZE);
-    SET_REG_DATA(IDC_PIECE_SHAPE);
     SET_REG_DATA(IDC_RANDOM_SEED);
     SET_REG_DATA(IDC_BACKGROUND_IMAGE);
+    SET_REG_DATA(IDC_LINE_COLOR);
 #undef SET_REG_DATA
 
     // レジストリキーを閉じる。
@@ -619,7 +636,7 @@ void hpdf_draw_box(HPDF_Page page, double x, double y, double width, double heig
 }
 
 // 画像を描く。
-bool hpdf_draw_image(HPDF_Doc pdf, HPDF_Page page, double x, double y, double width, double height, const string_t& filename)
+bool hpdf_draw_image(HPDF_Doc pdf, HPDF_Page page, double x, double y, double width, double height, const string_t& filename, bool keep_aspect)
 {
     // ファイルサイズを取得する。
     DWORD file_size = get_file_size(filename);
@@ -681,8 +698,38 @@ bool hpdf_draw_image(HPDF_Doc pdf, HPDF_Page page, double x, double y, double wi
         return false; // 失敗。
     }
 
-    // 画像を配置する。
-    HPDF_Page_DrawImage(page, image, x, y, width, height);
+    if (keep_aspect)
+    {
+        // 画像サイズとアスペクト比に従って処理を行う。
+        double aspect1 = (double)image_width / (double)image_height;
+        double aspect2 = width / height;
+        double stretch_width, stretch_height;
+        // アスペクト比に従ってセルいっぱいに縮小する。
+        if (aspect1 <= aspect2)
+        {
+            stretch_height = height;
+            stretch_width = height * aspect1;
+        }
+        else
+        {
+            stretch_width = width;
+            stretch_height = width / aspect1;
+        }
+        // ゼロにならないように補正する。
+        if (stretch_width <= 0)
+            stretch_width = 1;
+        if (stretch_height <= 0)
+            stretch_height = 1;
+        // 画像を配置する。
+        double dx = (width - stretch_width) / 2;
+        double dy = (height - stretch_height) / 2;
+        HPDF_Page_DrawImage(page, image, x + dx, y + dy, stretch_width, stretch_height);
+    }
+    else
+    {
+        // 画像を配置する。
+        HPDF_Page_DrawImage(page, image, x, y, width, height);
+    }
 
     // HBITMAPを破棄する。
     ::DeleteObject(hbm);
@@ -969,61 +1016,8 @@ void hpdf_draw_cut_lines_normal(HPDF_Doc pdf, HPDF_Page page, double x, double y
     }
 }
 
-// カット線を描画する（変形ピース）。
-void hpdf_draw_cut_lines_abnormal(HPDF_Doc pdf, HPDF_Page page, double x, double y, double width, double height, int rows, int columns, int seed)
-{
-    // メルセンヌツイスター乱数生成器を初期化。
-    init_genrand(seed);
-
-    // ピースのサイズ。
-    double cell_width = width / columns;
-    double cell_height = height / rows;
-
-    // 横線を描く。
-    for (INT iRow = 1; iRow < rows; ++iRow)
-    {
-        for (INT iColumn = 0; iColumn < columns; ++iColumn)
-        {
-            int sign = (genrand_int31() & 1) ? -1 : 1;
-            double px0 = x + (iColumn + 0) * cell_width;
-            double px1 = x + (iColumn + 1) * cell_width;
-            double py = y + iRow * cell_height;
-            double px_mid = (px0 + px1) / 2;
-            HCellParams params(genrand_int31(), px0, px1, cell_height);
-            HPDF_Page_MoveTo(page, px0, py);
-            draw_curve(page, px0, py, params.qx1, py, -params.delta * sign, params.slant1);
-            draw_curve(page, params.qx1, py, px_mid, py + params.tab_size * sign, 0.8 * sign, params.slant2);
-            draw_curve(page, px_mid, py + params.tab_size * sign, params.qx2, py, 0.8 * sign, -params.slant2);
-            draw_curve(page, params.qx2, py, px1, py, -params.delta * sign, -params.slant1);
-            HPDF_Page_Stroke(page);
-            sign = -sign;
-        }
-    }
-
-    // 縦線を描く。
-    for (INT iColumn = 1; iColumn < columns; ++iColumn)
-    {
-        for (INT iRow = 0; iRow < rows; ++iRow)
-        {
-            int sign = (genrand_int31() & 1) ? -1 : 1;
-            double py0 = y + (iRow + 0) * cell_height;
-            double py1 = y + (iRow + 1) * cell_height;
-            double px = x + iColumn * cell_width;
-            double py_mid = (py0 + py1) / 2;
-            VCellParams params(genrand_int31(), py0, py1, cell_width);
-            HPDF_Page_MoveTo(page, px, py0);
-            draw_curve(page, px, py0, px, params.qy1, -params.delta * sign, params.slant1);
-            draw_curve(page, px, params.qy1, px - params.tab_size * sign, py_mid, 0.8 * sign, -params.slant2);
-            draw_curve(page, px - params.tab_size * sign, py_mid, px, params.qy2, 0.8 * sign, params.slant2);
-            draw_curve(page, px, params.qy2, px, py1, -params.delta * sign, -params.slant1);
-            HPDF_Page_Stroke(page);
-            sign = -sign;
-        }
-    }
-}
-
 // カット線を描画する。
-void hpdf_draw_cut_lines(HPDF_Doc pdf, HPDF_Page page, double x, double y, double width, double height, int rows, int columns, int seed, bool abnormal)
+void hpdf_draw_cut_lines(HPDF_Doc pdf, HPDF_Page page, double x, double y, double width, double height, int rows, int columns, int seed)
 {
     // 外枠を描画する。
     if (x != 0 || y != 0)
@@ -1031,10 +1025,42 @@ void hpdf_draw_cut_lines(HPDF_Doc pdf, HPDF_Page page, double x, double y, doubl
         hpdf_draw_box(page, x, y, width, height);
     }
 
-    if (abnormal)
-        hpdf_draw_cut_lines_abnormal(pdf, page, x, y, width, height, rows, columns, seed);
-    else
-        hpdf_draw_cut_lines_normal(pdf, page, x, y, width, height, rows, columns, seed);
+    hpdf_draw_cut_lines_normal(pdf, page, x, y, width, height, rows, columns, seed);
+}
+
+BOOL Aspect_OnInitDialog(HWND hwnd, HWND hwndFocus, LPARAM lParam)
+{
+    CheckDlgButton(hwnd, rad1, BST_CHECKED);
+    return TRUE;
+}
+
+void Aspect_OnCommand(HWND hwnd, int id, HWND hwndCtl, UINT codeNotify)
+{
+    switch (id)
+    {
+    case IDOK:
+        if (IsDlgButtonChecked(hwnd, rad1) == BST_CHECKED)
+            EndDialog(hwnd, rad1);
+        else if (IsDlgButtonChecked(hwnd, rad2) == BST_CHECKED)
+            EndDialog(hwnd, rad2);
+        else
+            EndDialog(hwnd, IDOK);
+        break;
+    case IDCANCEL:
+        EndDialog(hwnd, id);
+        break;
+    }
+}
+
+// アスペクト比のダイアログプロシージャ。
+INT_PTR CALLBACK AspectDlgProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+    switch (uMsg)
+    {
+        HANDLE_MSG(hwnd, WM_INITDIALOG, Aspect_OnInitDialog);
+        HANDLE_MSG(hwnd, WM_COMMAND, Aspect_OnCommand);
+    }
+    return 0;
 }
 
 // メインディッシュ処理。
@@ -1093,12 +1119,37 @@ string_t JigsawMake::JustDoIt(HWND hwnd)
         double line_width = pixels_from_mm(0.8);
 
         // ピースの形状。
-        bool abnormal = (SETTING(IDC_PIECE_SHAPE) == doLoadString(IDS_ABNORMAL_SHAPE));
+        bool abnormal = false;
+
+        // カット線の色。
+        double r_value, g_value, b_value;
+        {
+            auto text = SETTING(IDC_LINE_COLOR);
+            auto ansi = ansi_from_wide(CP_ACP, text.c_str());
+            uint32_t text_color = color_value_parse(ansi);
+            text_color = color_value_fix(text_color);
+            r_value = GetRValue(text_color) / 255.5;
+            g_value = GetGValue(text_color) / 255.5;
+            b_value = GetBValue(text_color) / 255.5;
+        }
+
+        // 背景画像。
+        string_t background_image = SETTING(IDC_BACKGROUND_IMAGE);
+        int background_width, background_height;
+        HBITMAP hbmBackground = doLoadPic(background_image.c_str(), &background_width, &background_height);
+        ::DeleteObject(hbmBackground);
+        if (hbmBackground == NULL || !background_width || !background_height)
+        {
+            auto err_msg = ansi_from_wide(CP_ACP, doLoadString(IDS_CANT_LOAD_IMAGE));
+            throw std::runtime_error(err_msg);
+        }
 
         HPDF_Page page; // ページオブジェクト。
         HPDF_Font font; // フォントオブジェクト。
         double page_width, page_height; // ページサイズ。
         double content_x, content_y, content_width, content_height; // ページ内容の位置とサイズ。
+        bool see_aspect = false;
+        bool keep_aspect = false;
         for (INT iPage = 0; iPage < 3; ++iPage)
         {
             // ページを追加する。
@@ -1111,6 +1162,30 @@ string_t JigsawMake::JustDoIt(HWND hwnd)
             page_width = HPDF_Page_GetWidth(page);
             page_height = HPDF_Page_GetHeight(page);
 
+            // アスペクト比。
+            double aspect1 = page_width / page_height;
+            double aspect2 = background_width / (double)background_height;
+            if (!see_aspect)
+            {
+                see_aspect = true;
+                if (aspect1 * 0.9 > aspect2 || aspect2 * 0.9 > aspect1)
+                {
+                    INT_PTR id = DialogBox(g_hInstance, MAKEINTRESOURCE(2), hwnd, AspectDlgProc);
+                    switch (id)
+                    {
+                    case rad1:
+                        break;
+                    case rad2:
+                        keep_aspect = true;
+                        break;
+                    case IDCANCEL:
+                        return TEXT("");
+                    default:
+                        return TEXT("");
+                    }
+                }
+            }
+
             // ページ内容の位置とサイズ。
             content_x = frame_width_pixels;
             content_y = frame_width_pixels;
@@ -1121,7 +1196,14 @@ string_t JigsawMake::JustDoIt(HWND hwnd)
             HPDF_Page_SetLineWidth(page, line_width);
 
             // 線の色を RGB で設定する。PDF では RGB 各値を [0,1] で指定することになっている。
-            HPDF_Page_SetRGBStroke(page, 0, 0, 0);
+            if (iPage == 0)
+            {
+                HPDF_Page_SetRGBStroke(page, r_value, g_value, b_value);
+            }
+            else
+            {
+                HPDF_Page_SetRGBStroke(page, 0, 0, 0);
+            }
 
             /* 塗りつぶしの色を RGB で設定する。PDF では RGB 各値を [0,1] で指定することになっている。*/
             HPDF_Page_SetRGBFill(page, 0, 0, 0);
@@ -1149,17 +1231,17 @@ string_t JigsawMake::JustDoIt(HWND hwnd)
             {
             case 0:
                 // 画像を描く。
-                hpdf_draw_image(pdf, page, 0, 0, page_width, page_height, SETTING(IDC_BACKGROUND_IMAGE));
+                hpdf_draw_image(pdf, page, 0, 0, page_width, page_height, background_image, keep_aspect);
                 // カット線を描画する。
-                hpdf_draw_cut_lines(pdf, page, content_x, content_y, content_width, content_height, rows, columns, seed, abnormal);
+                hpdf_draw_cut_lines(pdf, page, content_x, content_y, content_width, content_height, rows, columns, seed);
                 break;
             case 1:
                 // カット線を描画する。
-                hpdf_draw_cut_lines(pdf, page, content_x, content_y, content_width, content_height, rows, columns, seed, abnormal);
+                hpdf_draw_cut_lines(pdf, page, content_x, content_y, content_width, content_height, rows, columns, seed);
                 break;
             case 2:
                 // 画像を描く。
-                hpdf_draw_image(pdf, page, 0, 0, page_width, page_height, SETTING(IDC_BACKGROUND_IMAGE));
+                hpdf_draw_image(pdf, page, 0, 0, page_width, page_height, background_image, keep_aspect);
                 break;
             }
 
@@ -1394,6 +1476,73 @@ void OnBrowse(HWND hwnd)
     }
 }
 
+// // 「カット線の色」ボタン。
+void OnLineColorButton(HWND hwnd)
+{
+    // カット線の色を取得する。
+    TCHAR szText[64];
+    GetDlgItemText(hwnd, IDC_LINE_COLOR, szText, _countof(szText));
+    StrTrim(szText, TEXT(" \t\r\n"));
+    auto ansi = ansi_from_wide(CP_ACP, szText);
+    auto color = color_value_parse(ansi);
+    if (color == -1)
+        color = 0;
+    color = color_value_fix(color);
+
+    static COLORREF custom_colors[16] = {
+        RGB(255, 255, 255), RGB(255, 255, 255), RGB(255, 255, 255), RGB(255, 255, 255),
+        RGB(255, 255, 255), RGB(255, 255, 255), RGB(255, 255, 255), RGB(255, 255, 255),
+        RGB(255, 255, 255), RGB(255, 255, 255), RGB(255, 255, 255), RGB(255, 255, 255),
+        RGB(255, 255, 255), RGB(255, 255, 255), RGB(255, 255, 255), RGB(255, 255, 255),
+    };
+    CHOOSECOLOR cc = { sizeof(cc), hwnd };
+    cc.rgbResult = color;
+    cc.lpCustColors = custom_colors;
+    cc.Flags = CC_FULLOPEN | CC_RGBINIT;
+    if (::ChooseColor(&cc))
+    {
+        StringCchPrintf(szText, _countof(szText), TEXT("#%02X%02X%02X"),
+            GetRValue(cc.rgbResult),
+            GetGValue(cc.rgbResult),
+            GetBValue(cc.rgbResult)
+        );
+        SetDlgItemText(hwnd, IDC_LINE_COLOR, szText);
+        InvalidateRect(GetDlgItem(hwnd, IDC_LINE_COLOR_BUTTON), NULL, TRUE);
+    }
+}
+
+// WM_DRAWITEM
+void OnDrawItem(HWND hwnd, const DRAWITEMSTRUCT * lpDrawItem)
+{
+    HWND hButton = ::GetDlgItem(hwnd, IDC_LINE_COLOR_BUTTON);
+    if (lpDrawItem->hwndItem != hButton)
+        return;
+
+    // カット線の色を取得する。
+    TCHAR szText[64];
+    GetDlgItemText(hwnd, IDC_LINE_COLOR, szText, _countof(szText));
+    StrTrim(szText, TEXT(" \t\r\n"));
+    auto ansi = ansi_from_wide(CP_ACP, szText);
+    auto text_color = color_value_parse(ansi);
+    if (text_color == -1)
+        text_color = 0;
+    text_color = color_value_fix(text_color);
+
+    BOOL bPressed = !!(lpDrawItem->itemState & ODS_CHECKED);
+
+    // ボタンを描画する。
+    RECT rcItem = lpDrawItem->rcItem;
+    UINT uState = DFCS_BUTTONPUSH | DFCS_ADJUSTRECT;
+    if (bPressed)
+        uState |= DFCS_PUSHED;
+    ::DrawFrameControl(lpDrawItem->hDC, &rcItem, DFC_BUTTON, uState);
+
+    // 色ボタンの内側を描画する。
+    HBRUSH hbr = ::CreateSolidBrush(text_color);
+    ::FillRect(lpDrawItem->hDC, &rcItem, hbr);
+    ::DeleteObject(hbr);
+}
+
 // WM_COMMAND
 // コマンド。
 void OnCommand(HWND hwnd, int id, HWND hwndCtl, UINT codeNotify)
@@ -1411,6 +1560,15 @@ void OnCommand(HWND hwnd, int id, HWND hwndCtl, UINT codeNotify)
         break;
     case IDC_ERASE_SETTINGS: // 「設定の初期化」ボタン。
         OnEraseSettings(hwnd);
+        break;
+    case IDC_LINE_COLOR: // 「カット線の色」テキストボックス。
+        if (codeNotify == EN_CHANGE)
+        {
+            InvalidateRect(GetDlgItem(hwnd, IDC_LINE_COLOR_BUTTON), NULL, TRUE);
+        }
+        break;
+    case IDC_LINE_COLOR_BUTTON: // 「カット線の色」ボタン。
+        OnLineColorButton(hwnd);
         break;
     case stc1:
         // コンボボックスの前のラベルをクリックしたら、対応するコンボボックスにフォーカスを当てる。
@@ -1444,6 +1602,14 @@ void OnCommand(HWND hwnd, int id, HWND hwndCtl, UINT codeNotify)
         // テキストボックスの前のラベルをクリックしたら、対応するテキストボックスにフォーカスを当てる。
         {
             HWND hEdit = ::GetDlgItem(hwnd, edt2);
+            Edit_SetSel(hEdit, 0, -1); // すべて選択。
+            ::SetFocus(hEdit);
+        }
+        break;
+    case stc8:
+        // テキストボックスの前のラベルをクリックしたら、対応するテキストボックスにフォーカスを当てる。
+        {
+            HWND hEdit = ::GetDlgItem(hwnd, edt8);
             Edit_SetSel(hEdit, 0, -1); // すべて選択。
             ::SetFocus(hEdit);
         }
@@ -1490,6 +1656,7 @@ DialogProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     switch (uMsg)
     {
         HANDLE_MSG(hwnd, WM_INITDIALOG, OnInitDialog);
+        HANDLE_MSG(hwnd, WM_DRAWITEM, OnDrawItem);
         HANDLE_MSG(hwnd, WM_COMMAND, OnCommand);
         HANDLE_MSG(hwnd, WM_DROPFILES, OnDropFiles);
         HANDLE_MSG(hwnd, WM_DESTROY, OnDestroy);

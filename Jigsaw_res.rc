@@ -42,11 +42,12 @@ FONT 9, "メイリオ"
     LTEXT "ピースのサイズ(cm):", stc4, 5, 50, 70, 10, SS_CENTERIMAGE | SS_NOTIFY | NOT WS_GROUP
     LTEXT "(目安です)", -1, 5, 60, 70, 10, SS_NOTIFY | NOT WS_GROUP
     COMBOBOX cmb4, 80, 50, 50, 300, CBS_HASSTRINGS | CBS_AUTOHSCROLL | CBS_DROPDOWN | WS_VSCROLL | WS_TABSTOP
-    LTEXT "ピースの形状:", stc5, 140, 50, 50, 10, SS_CENTERIMAGE | SS_NOTIFY | NOT WS_GROUP
-    COMBOBOX cmb5, 200, 50, 55, 300, CBS_HASSTRINGS | CBS_AUTOHSCROLL | CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
     LTEXT "背景画像:", stc6, 5, 75, 65, 10, SS_CENTERIMAGE | SS_NOTIFY | NOT WS_GROUP
     EDITTEXT edt1, 70, 75, 200, 12, ES_AUTOHSCROLL
     PUSHBUTTON "参照...", psh1, 210, 90, 60, 12
+    LTEXT "カット線の色:", stc8, 5, 90, 60, 10, SS_CENTERIMAGE | SS_NOTIFY | NOT WS_GROUP
+    EDITTEXT edt8, 70, 90, 50, 10
+    PUSHBUTTON "", psh8, 125, 90, 25, 10, BS_OWNERDRAW
     LTEXT "乱数の種:", stc7, 5, 105, 65, 10, SS_CENTERIMAGE | SS_NOTIFY | NOT WS_GROUP
     EDITTEXT edt2, 70, 105, 41, 12, ES_AUTOHSCROLL | ES_NUMBER
     CONTROL "", scr1, "msctls_updown32", UDS_AUTOBUDDY | UDS_ALIGNRIGHT | UDS_SETBUDDYINT, 110, 110, 13, 13
@@ -62,7 +63,7 @@ FONT 9, "メイリオ"
 {
     LTEXT "画像と用紙の縦横比が大きく異なります。\r\n\r\n処理を指定して下さい。", -1, 5, 10, 155, 30
     AUTORADIOBUTTON "縦横比を無視して用紙全体に引き延ばす(&S)", rad1, 5, 50, 155, 15, WS_TABSTOP
-    AUTORADIOBUTTON "縦横比を考慮して用紙の端まで拡大する(&F)", rad2, 5, 70, 155, 20, WS_TABSTOP
+    AUTORADIOBUTTON "縦横比を保ったまま用紙の端まで拡大する(&F)", rad2, 5, 70, 155, 20, WS_TABSTOP
     DEFPUSHBUTTON "OK", IDOK, 35, 100, 60, 25
     PUSHBUTTON "キャンセル", IDCANCEL, 100, 100, 60, 25
 }
@@ -124,6 +125,9 @@ STRINGTABLE
     IDS_REASON_POSITIVE_REAL, "正の実数を指定して下さい。"
     IDS_BACKGROUND, "背景画像"
     IDS_REASON_VALID_IMAGE, "有効な画像ファイルを指定して下さい。"
+    IDS_FIELD_TEXT_COLOR, "テキストの色"
+    IDS_REASON_VALID_COLOR, "有効な色を指定して下さい。"
+    IDS_CANT_LOAD_IMAGE, "画像ファイルが読み込めませんでした。"
 }
 
 //////////////////////////////////////////////////////////////////////////////

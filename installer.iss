@@ -7,7 +7,7 @@
 #define MyAppURL "https://katahiromz.web.fc2.com/"
 #define MyAppExeName "Jigsaw.exe"
 #define MyAppCopyright "(c) katahiromz"
-#define MyAppDescription "画像を並べてPDFを作成"
+#define MyAppDescription "画像からジグソーパズルのPDFを作成"
 
 [Setup]
 ; NOTE: The value of AppId uniquely identifies this application.

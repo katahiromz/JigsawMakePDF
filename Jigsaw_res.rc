@@ -34,7 +34,7 @@ LANGUAGE LANG_JAPANESE, SUBLANG_DEFAULT
 // RT_DIALOG
 
 1 DIALOG 0, 0, 275, 145
-CAPTION "ジグソーメイクPDF Ver.0.0.0 by 片山博文MZ"
+CAPTION "ジグソーメイクPDF Ver.0.9.0 by 片山博文MZ"
 STYLE DS_CENTER | DS_MODALFRAME | WS_POPUPWINDOW | WS_CAPTION | WS_MINIMIZEBOX
 FONT 9, "メイリオ"
 {
@@ -77,8 +77,8 @@ FONT 9, "メイリオ"
 // RT_VERSION
 
 1 VERSIONINFO
-FILEVERSION     0, 0, 0, 0
-PRODUCTVERSION  0, 0, 0, 0
+FILEVERSION     0, 9, 0, 0
+PRODUCTVERSION  0, 9, 0, 0
 FILEOS          0x40004
 FILETYPE        0x1
 {
@@ -88,10 +88,10 @@ FILETYPE        0x1
         {
             VALUE "CompanyName", "片山博文MZ\0"
             VALUE "FileDescription", "ジグソーメイクPDF\0"
-            VALUE "FileVersion", "0.0.0\0"
+            VALUE "FileVersion", "0.9.0\0"
             VALUE "LegalCopyright", "(c) 2023 katahiromz\0"
             VALUE "ProductName", "ジグソーメイクPDF\0"
-            VALUE "ProductVersion", "0.0.0\0"
+            VALUE "ProductVersion", "0.9.0\0"
         }
     }
     BLOCK "VarFileInfo"

@@ -382,15 +382,13 @@ void JigsawMaker::InitDialog(HWND hwnd)
     SendDlgItemMessage(hwnd, IDC_FRAME_WIDTH, CB_ADDSTRING, 0, (LPARAM)TEXT("0"));
     SendDlgItemMessage(hwnd, IDC_FRAME_WIDTH, CB_ADDSTRING, 0, (LPARAM)TEXT("10"));
     SendDlgItemMessage(hwnd, IDC_FRAME_WIDTH, CB_ADDSTRING, 0, (LPARAM)TEXT("15"));
+    SendDlgItemMessage(hwnd, IDC_FRAME_WIDTH, CB_ADDSTRING, 0, (LPARAM)TEXT("20"));
 
     // IDC_PIECE_SIZE: ピースのサイズ(cm)。
+    SendDlgItemMessage(hwnd, IDC_PIECE_SIZE, CB_ADDSTRING, 0, (LPARAM)TEXT("1.5"));
+    SendDlgItemMessage(hwnd, IDC_PIECE_SIZE, CB_ADDSTRING, 0, (LPARAM)TEXT("2.0"));
     SendDlgItemMessage(hwnd, IDC_PIECE_SIZE, CB_ADDSTRING, 0, (LPARAM)TEXT("3.0"));
     SendDlgItemMessage(hwnd, IDC_PIECE_SIZE, CB_ADDSTRING, 0, (LPARAM)TEXT("4.0"));
-    SendDlgItemMessage(hwnd, IDC_PIECE_SIZE, CB_ADDSTRING, 0, (LPARAM)TEXT("5.0"));
-    SendDlgItemMessage(hwnd, IDC_PIECE_SIZE, CB_ADDSTRING, 0, (LPARAM)TEXT("6.0"));
-    SendDlgItemMessage(hwnd, IDC_PIECE_SIZE, CB_ADDSTRING, 0, (LPARAM)TEXT("7.0"));
-    SendDlgItemMessage(hwnd, IDC_PIECE_SIZE, CB_ADDSTRING, 0, (LPARAM)TEXT("8.0"));
-    SendDlgItemMessage(hwnd, IDC_PIECE_SIZE, CB_ADDSTRING, 0, (LPARAM)TEXT("9.0"));
 
     // IDC_PIECE_SHAPE: ピースの形状。
     SendDlgItemMessage(hwnd, IDC_PIECE_SHAPE, CB_ADDSTRING, 0, (LPARAM)doLoadString(IDS_NORMAL_SHAPE));
@@ -750,8 +748,72 @@ void draw_curve(HPDF_Page page, double px0, double py0, double px1, double py1, 
     HPDF_Page_CurveTo(page, px0, py0, mid_x, mid_y, px1, py1);
 }
 
-// カット線を描画する。
-void hpdf_draw_cut_lines(HPDF_Doc pdf, HPDF_Page page, double x, double y, double width, double height, int rows, int columns, int seed)
+// カット線を描画する（通常ピース）。
+void hpdf_draw_cut_lines_normal(HPDF_Doc pdf, HPDF_Page page, double x, double y, double width, double height, int rows, int columns, int seed)
+{
+    std::srand(seed);
+
+    // 外枠を描画する。
+    if (x != 0 || y != 0)
+    {
+        hpdf_draw_box(page, x, y, width, height);
+    }
+
+    // ピースのサイズ。
+    double cell_width = width / columns;
+    double cell_height = height / rows;
+
+    // 横線を描く。
+    for (INT iRow = 1; iRow < rows; ++iRow)
+    {
+        int sign = (iRow & 1) ? 1 : -1;
+        for (INT iColumn = 0; iColumn < columns; ++iColumn)
+        {
+            double tab_size = ((4 + std::rand() % 2) / 4.0) * cell_height / 3;
+            double px0 = x + (iColumn + 0) * cell_width;
+            double px1 = x + (iColumn + 1) * cell_width;
+            double px_mid = (px0 + px1) / 2;
+            double px_mid_1 = (2 * px0 + 1 * px1) / 3;
+            double px_mid_2 = (1 * px0 + 2 * px1) / 3;
+            double py = y + iRow * cell_height;
+            double magnitude = (2 + std::rand() % 2) * 0.2;
+            HPDF_Page_MoveTo(page, px0, py);
+            draw_curve(page, px0, py, px_mid_1, py, -0.2 * sign);
+            draw_curve(page, px_mid_1, py, px_mid, py + sign * tab_size * magnitude, magnitude * sign);
+            draw_curve(page, px_mid, py + sign * tab_size * magnitude, px_mid_2, py, magnitude * sign);
+            draw_curve(page, px_mid_2, py, px1, py, -0.2 * sign);
+            HPDF_Page_Stroke(page);
+            sign = -sign;
+        }
+    }
+
+    // 縦線を描く。
+    for (INT iColumn = 1; iColumn < columns; ++iColumn)
+    {
+        int sign = (iColumn & 1) ? -1 : 1;
+        for (INT iRow = 0; iRow < rows; ++iRow)
+        {
+            double tab_size = ((4 + std::rand() % 2) / 4.0) * cell_width / 3;
+            double py0 = y + (iRow + 0) * cell_height;
+            double py1 = y + (iRow + 1) * cell_height;
+            double py_mid = (py0 + py1) / 2;
+            double py_mid_1 = (2 * py0 + 1 * py1) / 3;
+            double py_mid_2 = (1 * py0 + 2 * py1) / 3;
+            double px = x + iColumn * cell_width;
+            double magnitude = (2 + std::rand() % 2) * 0.2;
+            HPDF_Page_MoveTo(page, px, py0);
+            draw_curve(page, px, py0, px, py_mid_1, 0.2 * sign);
+            draw_curve(page, px, py_mid_1, px + sign * tab_size * magnitude, py_mid, -magnitude * sign);
+            draw_curve(page, px + sign * tab_size * magnitude, py_mid, px, py_mid_2, -magnitude * sign);
+            draw_curve(page, px, py_mid_2, px, py1, 0.2 * sign);
+            HPDF_Page_Stroke(page);
+            sign = -sign;
+        }
+    }
+}
+
+// カット線を描画する（変形ピース）。
+void hpdf_draw_cut_lines_abnormal(HPDF_Doc pdf, HPDF_Page page, double x, double y, double width, double height, int rows, int columns, int seed)
 {
     std::srand(seed);
 
@@ -785,6 +847,7 @@ void hpdf_draw_cut_lines(HPDF_Doc pdf, HPDF_Page page, double x, double y, doubl
             draw_curve(page, px_mid, py + sign * tab_size * magnitude, px_mid_2, py, magnitude * sign);
             draw_curve(page, px_mid_2, py, px1, py, -0.2 * sign);
             HPDF_Page_Stroke(page);
+            sign = -sign;
         }
     }
 
@@ -808,8 +871,18 @@ void hpdf_draw_cut_lines(HPDF_Doc pdf, HPDF_Page page, double x, double y, doubl
             draw_curve(page, px + sign * tab_size * magnitude, py_mid, px, py_mid_2, -magnitude * sign);
             draw_curve(page, px, py_mid_2, px, py1, 0.2 * sign);
             HPDF_Page_Stroke(page);
+            sign = -sign;
         }
     }
+}
+
+// カット線を描画する。
+void hpdf_draw_cut_lines(HPDF_Doc pdf, HPDF_Page page, double x, double y, double width, double height, int rows, int columns, int seed, bool abnormal)
+{
+    if (abnormal)
+        hpdf_draw_cut_lines_abnormal(pdf, page, x, y, width, height, rows, columns, seed);
+    else
+        hpdf_draw_cut_lines_normal(pdf, page, x, y, width, height, rows, columns, seed);
 }
 
 // メインディッシュ処理。
@@ -867,6 +940,9 @@ string_t JigsawMaker::JustDoIt(HWND hwnd)
         // 線の太さ。
         double line_width = pixels_from_mm(0.8);
 
+        // ピースの形状。
+        bool abnormal = (SETTING(IDC_PIECE_SHAPE) == doLoadString(IDS_ABNORMAL_SHAPE));
+
         HPDF_Page page; // ページオブジェクト。
         HPDF_Font font; // フォントオブジェクト。
         double page_width, page_height; // ページサイズ。
@@ -899,14 +975,15 @@ string_t JigsawMaker::JustDoIt(HWND hwnd)
             HPDF_Page_SetRGBFill(page, 0, 0, 0);
 
             // 行数と列数。
-            int columns = (int)(page_width / piece_size);
-            int rows = (int)(page_height / piece_size);
+            int columns = (int)(mm_from_pixels(content_width) / piece_size);
+            int rows = (int)(mm_from_pixels(content_height) / piece_size);
             if (rows <= 0)
                 rows = 1;
             if (columns <= 0)
                 columns = 1;
-            double piece_width = page_width / rows;
-            double piece_height = page_height / columns;
+            double piece_width = content_width / columns;
+            double piece_height = content_height / rows;
+            if (0)
             {
                 TCHAR szText[128];
                 StringCchPrintf(szText, _countof(szText), TEXT("%f, %f"), piece_width, piece_height);
@@ -924,11 +1001,11 @@ string_t JigsawMaker::JustDoIt(HWND hwnd)
                     // 画像を描く。
                     hpdf_draw_image(pdf, page, 0, 0, page_width, page_height, SETTING(IDC_BACKGROUND_IMAGE));
                     // カット線を描画する。
-                    hpdf_draw_cut_lines(pdf, page, content_x, content_y, content_width, content_height, rows, columns, seed);
+                    hpdf_draw_cut_lines(pdf, page, content_x, content_y, content_width, content_height, rows, columns, seed, abnormal);
                     break;
                 case 1:
                     // カット線を描画する。
-                    hpdf_draw_cut_lines(pdf, page, content_x, content_y, content_width, content_height, rows, columns, seed);
+                    hpdf_draw_cut_lines(pdf, page, content_x, content_y, content_width, content_height, rows, columns, seed, abnormal);
                     break;
                 case 2:
                     // 画像を描く。
@@ -939,7 +1016,7 @@ string_t JigsawMaker::JustDoIt(HWND hwnd)
             else
             {
                 // カット線を描画する。
-                hpdf_draw_cut_lines(pdf, page, content_x, content_y, content_width, content_height, rows, columns, seed);
+                hpdf_draw_cut_lines(pdf, page, content_x, content_y, content_width, content_height, rows, columns, seed, abnormal);
             }
 
 #ifndef NO_SHAREWARE

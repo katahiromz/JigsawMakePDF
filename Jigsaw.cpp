@@ -18,6 +18,7 @@
 #include "TempFile.hpp"     // 一時ファイル操作用のヘッダ。
 #include "gpimage.hpp"      // GDI+を用いた画像ファイル入出力ライブラリ。
 #include "Susie.hpp"        // Susieプラグインサポート。
+#include "MT.h"             // メルセンヌツイスター乱数生成器。
 #include "resource.h"       // リソースIDの定義ヘッダ。
 
 // シェアウェア情報。
@@ -912,13 +913,8 @@ struct VCellParams
 // カット線を描画する（通常ピース）。
 void hpdf_draw_cut_lines_normal(HPDF_Doc pdf, HPDF_Page page, double x, double y, double width, double height, int rows, int columns, int seed)
 {
-    std::srand(seed);
-
-    // 外枠を描画する。
-    if (x != 0 || y != 0)
-    {
-        hpdf_draw_box(page, x, y, width, height);
-    }
+    // メルセンヌツイスター乱数生成器を初期化。
+    init_genrand(seed);
 
     // ピースのサイズ。
     double cell_width = width / columns;
@@ -934,7 +930,7 @@ void hpdf_draw_cut_lines_normal(HPDF_Doc pdf, HPDF_Page page, double x, double y
             double px1 = x + (iColumn + 1) * cell_width;
             double py = y + iRow * cell_height;
             double px_mid = (px0 + px1) / 2;
-            HCellParams params(std::rand(), px0, px1, cell_height);
+            HCellParams params(genrand_int31(), px0, px1, cell_height);
             HPDF_Page_MoveTo(page, px0, py);
             draw_curve(page, px0, py, params.qx1, py, -params.delta * sign, params.slant1);
             draw_curve(page, params.qx1, py, px_mid, py + params.tab_size * sign, 0.8 * sign, params.slant2);
@@ -955,7 +951,7 @@ void hpdf_draw_cut_lines_normal(HPDF_Doc pdf, HPDF_Page page, double x, double y
             double py1 = y + (iRow + 1) * cell_height;
             double px = x + iColumn * cell_width;
             double py_mid = (py0 + py1) / 2;
-            VCellParams params(std::rand(), py0, py1, cell_width);
+            VCellParams params(genrand_int31(), py0, py1, cell_width);
             HPDF_Page_MoveTo(page, px, py0);
             draw_curve(page, px, py0, px, params.qy1, -params.delta * sign, params.slant1);
             draw_curve(page, px, params.qy1, px - params.tab_size * sign, py_mid, 0.8 * sign, -params.slant2);
@@ -970,13 +966,8 @@ void hpdf_draw_cut_lines_normal(HPDF_Doc pdf, HPDF_Page page, double x, double y
 // カット線を描画する（変形ピース）。
 void hpdf_draw_cut_lines_abnormal(HPDF_Doc pdf, HPDF_Page page, double x, double y, double width, double height, int rows, int columns, int seed)
 {
-    std::srand(seed);
-
-    // 外枠を描画する。
-    if (x != 0 || y != 0)
-    {
-        hpdf_draw_box(page, x, y, width, height);
-    }
+    // メルセンヌツイスター乱数生成器を初期化。
+    init_genrand(seed);
 
     // ピースのサイズ。
     double cell_width = width / columns;
@@ -987,12 +978,12 @@ void hpdf_draw_cut_lines_abnormal(HPDF_Doc pdf, HPDF_Page page, double x, double
     {
         for (INT iColumn = 0; iColumn < columns; ++iColumn)
         {
-            int sign = (std::rand() & 1) ? -1 : 1;
+            int sign = (genrand_int31() & 1) ? -1 : 1;
             double px0 = x + (iColumn + 0) * cell_width;
             double px1 = x + (iColumn + 1) * cell_width;
             double py = y + iRow * cell_height;
             double px_mid = (px0 + px1) / 2;
-            HCellParams params(std::rand(), px0, px1, cell_height);
+            HCellParams params(genrand_int31(), px0, px1, cell_height);
             HPDF_Page_MoveTo(page, px0, py);
             draw_curve(page, px0, py, params.qx1, py, -params.delta * sign, params.slant1);
             draw_curve(page, params.qx1, py, px_mid, py + params.tab_size * sign, 0.8 * sign, params.slant2);
@@ -1008,12 +999,12 @@ void hpdf_draw_cut_lines_abnormal(HPDF_Doc pdf, HPDF_Page page, double x, double
     {
         for (INT iRow = 0; iRow < rows; ++iRow)
         {
-            int sign = (std::rand() & 1) ? -1 : 1;
+            int sign = (genrand_int31() & 1) ? -1 : 1;
             double py0 = y + (iRow + 0) * cell_height;
             double py1 = y + (iRow + 1) * cell_height;
             double px = x + iColumn * cell_width;
             double py_mid = (py0 + py1) / 2;
-            VCellParams params(std::rand(), py0, py1, cell_width);
+            VCellParams params(genrand_int31(), py0, py1, cell_width);
             HPDF_Page_MoveTo(page, px, py0);
             draw_curve(page, px, py0, px, params.qy1, -params.delta * sign, params.slant1);
             draw_curve(page, px, params.qy1, px - params.tab_size * sign, py_mid, 0.8 * sign, -params.slant2);
@@ -1028,6 +1019,12 @@ void hpdf_draw_cut_lines_abnormal(HPDF_Doc pdf, HPDF_Page page, double x, double
 // カット線を描画する。
 void hpdf_draw_cut_lines(HPDF_Doc pdf, HPDF_Page page, double x, double y, double width, double height, int rows, int columns, int seed, bool abnormal)
 {
+    // 外枠を描画する。
+    if (x != 0 || y != 0)
+    {
+        hpdf_draw_box(page, x, y, width, height);
+    }
+
     if (abnormal)
         hpdf_draw_cut_lines_abnormal(pdf, page, x, y, width, height, rows, columns, seed);
     else

@@ -39,12 +39,11 @@ FONT 9, "メイリオ"
     COMBOBOX cmb2, 70, 20, 95, 300, CBS_HASSTRINGS | CBS_AUTOHSCROLL | CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
     LTEXT "外枠(mm):", stc3, 5, 35, 65, 10, SS_CENTERIMAGE | SS_NOTIFY | NOT WS_GROUP
     COMBOBOX cmb3, 70, 35, 55, 300, CBS_HASSTRINGS | CBS_AUTOHSCROLL | CBS_DROPDOWN | WS_VSCROLL | WS_TABSTOP
-    LTEXT "ピースの幅(mm):", stc4, 5, 50, 65, 10, SS_CENTERIMAGE | SS_NOTIFY | NOT WS_GROUP
-    LTEXT "(目安です)", -1, 5, 60, 65, 10, SS_NOTIFY | NOT WS_GROUP
-    COMBOBOX cmb4, 70, 50, 55, 300, CBS_HASSTRINGS | CBS_AUTOHSCROLL | CBS_DROPDOWN | WS_VSCROLL | WS_TABSTOP
-    LTEXT "ピースの高さ(mm):", stc5, 135, 50, 70, 10, SS_CENTERIMAGE | SS_NOTIFY | NOT WS_GROUP
-    LTEXT "(目安です)", -1, 135, 60, 70, 10, SS_NOTIFY | NOT WS_GROUP
-    COMBOBOX cmb5, 215, 50, 55, 300, CBS_HASSTRINGS | CBS_AUTOHSCROLL | CBS_DROPDOWN | WS_VSCROLL | WS_TABSTOP
+    LTEXT "ピースのサイズ(cm):", stc4, 5, 50, 70, 10, SS_CENTERIMAGE | SS_NOTIFY | NOT WS_GROUP
+    LTEXT "(目安です)", -1, 5, 60, 70, 10, SS_NOTIFY | NOT WS_GROUP
+    COMBOBOX cmb4, 80, 50, 50, 300, CBS_HASSTRINGS | CBS_AUTOHSCROLL | CBS_DROPDOWN | WS_VSCROLL | WS_TABSTOP
+    LTEXT "ピースの形状:", stc5, 140, 50, 50, 10, SS_CENTERIMAGE | SS_NOTIFY | NOT WS_GROUP
+    COMBOBOX cmb5, 200, 50, 55, 300, CBS_HASSTRINGS | CBS_AUTOHSCROLL | CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
     LTEXT "背景画像:", stc6, 5, 75, 65, 10, SS_CENTERIMAGE | SS_NOTIFY | NOT WS_GROUP
     EDITTEXT edt1, 70, 75, 200, 12, ES_AUTOHSCROLL
     PUSHBUTTON "参照...", psh1, 210, 90, 60, 12
@@ -106,6 +105,11 @@ STRINGTABLE
     IDS_OPENFILTER, "画像ファイル (*.jpg;*.gif;*.png;*.tif;*.bmp;*.wmf;*.emf;*.ico;*.cur)|*.jpg;*.jpeg;*.jpe;*.jfif;*.gif;*.png;*.tif;*.tiff;*.bmp;*.dib;*.wmf;*.emf;*.ico;*.cur|JPEG 画像 (*.jpg;*.jpeg;*.jpe;*.jfif)|*.jpg;*.jpeg;*.jpe;*.jfif|GIF 画像 (*.gif)|*.gif|PNG 画像 (*.png)|*.png|TIFF 画像 (*.tif;*.tiff)|*.tif;*.tiff|ビットマップ (*.bmp;*.dib)|*.bmp;*.dib|WMF (*.wmf)|*.wmf|EMF (*.emf)|*.emf|アイコン ファイル (*.ico)|*.ico|カーソル ファイル (*.cur)|*.cur|すべてのファイル (*.*)|*.*|"
     IDS_SET_BACKGROUND_IMAGE, "背景画像ファイルを指定"
     IDS_SUSIE_IMAGES, "Susie 画像ファイル"
+    IDS_NORMAL_SHAPE, "通常ピース"
+    IDS_ABNORMAL_SHAPE, "変形ピース"
+    IDS_FIELD_PIECE_SIZE, "ピースの形状"
+    IDS_REASON_EMPTY_STRING, "空ではない文字列を指定して下さい。"
+    IDS_REASON_POSITIVE_REAL, "正の実数を指定して下さい。"
 }
 
 //////////////////////////////////////////////////////////////////////////////

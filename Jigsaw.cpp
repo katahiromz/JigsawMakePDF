@@ -52,8 +52,8 @@ enum
     IDC_PAGE_SIZE = cmb1,
     IDC_PAGE_DIRECTION = cmb2,
     IDC_FRAME_WIDTH = cmb3,
-    IDC_PIECE_WIDTH = cmb4,
-    IDC_PIECE_HEIGHT = cmb5,
+    IDC_PIECE_SIZE = cmb4,
+    IDC_PIECE_SHAPE = cmb5,
     IDC_BACKGROUND_IMAGE = edt1,
     IDC_RANDOM_SEED = edt2,
     IDC_RANDOWM_SEED_UPDOWN = scr1,
@@ -346,8 +346,8 @@ JigsawMaker::JigsawMaker(HINSTANCE hInstance, INT argc, LPTSTR *argv)
 #define IDC_PAGE_SIZE_DEFAULT doLoadString(IDS_A4)
 #define IDC_PAGE_DIRECTION_DEFAULT doLoadString(IDS_LANDSCAPE)
 #define IDC_FRAME_WIDTH_DEFAULT TEXT("10")
-#define IDC_PIECE_WIDTH_DEFAULT TEXT("30")
-#define IDC_PIECE_HEIGHT_DEFAULT TEXT("30")
+#define IDC_PIECE_SIZE_DEFAULT TEXT("5.0")
+#define IDC_PIECE_SHAPE_DEFAULT doLoadString(IDS_NORMAL_SHAPE)
 #define IDC_RANDOM_SEED_DEFAULT TEXT("0")
 #define IDC_BACKGROUND_IMAGE_DEFAULT TEXT("")
 
@@ -358,8 +358,8 @@ void JigsawMaker::Reset()
     SETTING(IDC_PAGE_SIZE) = IDC_PAGE_SIZE_DEFAULT;
     SETTING(IDC_PAGE_DIRECTION) = IDC_PAGE_DIRECTION_DEFAULT;
     SETTING(IDC_FRAME_WIDTH) = IDC_FRAME_WIDTH_DEFAULT;
-    SETTING(IDC_PIECE_WIDTH) = IDC_PIECE_WIDTH_DEFAULT;
-    SETTING(IDC_PIECE_HEIGHT) = IDC_PIECE_HEIGHT_DEFAULT;
+    SETTING(IDC_PIECE_SIZE) = IDC_PIECE_SIZE_DEFAULT;
+    SETTING(IDC_PIECE_SHAPE) = IDC_PIECE_SHAPE_DEFAULT;
     SETTING(IDC_RANDOM_SEED) = IDC_RANDOM_SEED_DEFAULT;
     SETTING(IDC_BACKGROUND_IMAGE) = IDC_BACKGROUND_IMAGE_DEFAULT;
 }
@@ -383,15 +383,18 @@ void JigsawMaker::InitDialog(HWND hwnd)
     SendDlgItemMessage(hwnd, IDC_FRAME_WIDTH, CB_ADDSTRING, 0, (LPARAM)TEXT("10"));
     SendDlgItemMessage(hwnd, IDC_FRAME_WIDTH, CB_ADDSTRING, 0, (LPARAM)TEXT("15"));
 
-    // IDC_PIECE_WIDTH: ピースの幅(mm)。
-    SendDlgItemMessage(hwnd, IDC_PIECE_WIDTH, CB_ADDSTRING, 0, (LPARAM)TEXT("30"));
-    SendDlgItemMessage(hwnd, IDC_PIECE_WIDTH, CB_ADDSTRING, 0, (LPARAM)TEXT("40"));
-    SendDlgItemMessage(hwnd, IDC_PIECE_WIDTH, CB_ADDSTRING, 0, (LPARAM)TEXT("50"));
+    // IDC_PIECE_SIZE: ピースのサイズ(cm)。
+    SendDlgItemMessage(hwnd, IDC_PIECE_SIZE, CB_ADDSTRING, 0, (LPARAM)TEXT("3.0"));
+    SendDlgItemMessage(hwnd, IDC_PIECE_SIZE, CB_ADDSTRING, 0, (LPARAM)TEXT("4.0"));
+    SendDlgItemMessage(hwnd, IDC_PIECE_SIZE, CB_ADDSTRING, 0, (LPARAM)TEXT("5.0"));
+    SendDlgItemMessage(hwnd, IDC_PIECE_SIZE, CB_ADDSTRING, 0, (LPARAM)TEXT("6.0"));
+    SendDlgItemMessage(hwnd, IDC_PIECE_SIZE, CB_ADDSTRING, 0, (LPARAM)TEXT("7.0"));
+    SendDlgItemMessage(hwnd, IDC_PIECE_SIZE, CB_ADDSTRING, 0, (LPARAM)TEXT("8.0"));
+    SendDlgItemMessage(hwnd, IDC_PIECE_SIZE, CB_ADDSTRING, 0, (LPARAM)TEXT("9.0"));
 
-    // IDC_PIECE_HEIGHT: ピースの高さ(mm)。
-    SendDlgItemMessage(hwnd, IDC_PIECE_HEIGHT, CB_ADDSTRING, 0, (LPARAM)TEXT("30"));
-    SendDlgItemMessage(hwnd, IDC_PIECE_HEIGHT, CB_ADDSTRING, 0, (LPARAM)TEXT("40"));
-    SendDlgItemMessage(hwnd, IDC_PIECE_HEIGHT, CB_ADDSTRING, 0, (LPARAM)TEXT("50"));
+    // IDC_PIECE_SHAPE: ピースの形状。
+    SendDlgItemMessage(hwnd, IDC_PIECE_SHAPE, CB_ADDSTRING, 0, (LPARAM)doLoadString(IDS_NORMAL_SHAPE));
+    SendDlgItemMessage(hwnd, IDC_PIECE_SHAPE, CB_ADDSTRING, 0, (LPARAM)doLoadString(IDS_ABNORMAL_SHAPE));
 
     // IDC_RANDOWM_SEED_UPDOWN: 乱数の種のスピンコントロール。
     SendDlgItemMessage(hwnd, IDC_RANDOWM_SEED_UPDOWN, UDM_SETRANGE, 0, MAKELPARAM(0x7FFF, 0));
@@ -411,9 +414,25 @@ BOOL JigsawMaker::DataFromDialog(HWND hwnd)
     GET_COMBO_DATA(IDC_PAGE_SIZE);
     GET_COMBO_DATA(IDC_PAGE_DIRECTION);
     GET_COMBO_DATA(IDC_FRAME_WIDTH);
-    GET_COMBO_DATA(IDC_PIECE_WIDTH);
-    GET_COMBO_DATA(IDC_PIECE_HEIGHT);
+    GET_COMBO_DATA(IDC_PIECE_SIZE);
+    GET_COMBO_DATA(IDC_PIECE_SHAPE);
 #undef GET_COMBO_DATA
+
+    auto piece_size = SETTING(IDC_PIECE_SIZE);
+    if (piece_size.empty())
+    {
+        SETTING(IDC_PIECE_SIZE) = IDC_PIECE_SIZE_DEFAULT;
+        OnInvalidString(hwnd, IDC_PIECE_SIZE, IDS_FIELD_PIECE_SIZE, IDS_REASON_EMPTY_STRING);
+        return FALSE;
+    }
+    wchar_t *endptr;
+    double value = wcstod(piece_size.c_str(), &endptr);
+    if (*endptr != 0 || value <= 0)
+    {
+        SETTING(IDC_PIECE_SIZE) = IDC_PIECE_SIZE_DEFAULT;
+        OnInvalidString(hwnd, IDC_PIECE_SIZE, IDS_FIELD_PIECE_SIZE, IDS_REASON_POSITIVE_REAL);
+        return FALSE;
+    }
 
     ::GetDlgItemText(hwnd, IDC_RANDOM_SEED, szText, _countof(szText));
     str_trim(szText);
@@ -444,8 +463,8 @@ BOOL JigsawMaker::DialogFromData(HWND hwnd)
     SET_COMBO_DATA(IDC_PAGE_SIZE);
     SET_COMBO_DATA(IDC_PAGE_DIRECTION);
     SET_COMBO_DATA(IDC_FRAME_WIDTH);
-    SET_COMBO_DATA(IDC_PIECE_WIDTH);
-    SET_COMBO_DATA(IDC_PIECE_HEIGHT);
+    SET_COMBO_DATA(IDC_PIECE_SIZE);
+    SET_COMBO_DATA(IDC_PIECE_SHAPE);
 #undef SET_COMBO_DATA
 
     SetDlgItemText(hwnd, IDC_RANDOM_SEED, SETTING(IDC_RANDOM_SEED).c_str());
@@ -485,8 +504,8 @@ BOOL JigsawMaker::DataFromReg(HWND hwnd)
     GET_REG_DATA(IDC_PAGE_SIZE);
     GET_REG_DATA(IDC_PAGE_DIRECTION);
     GET_REG_DATA(IDC_FRAME_WIDTH);
-    GET_REG_DATA(IDC_PIECE_WIDTH);
-    GET_REG_DATA(IDC_PIECE_HEIGHT);
+    GET_REG_DATA(IDC_PIECE_SIZE);
+    GET_REG_DATA(IDC_PIECE_SHAPE);
     GET_REG_DATA(IDC_RANDOM_SEED);
     GET_REG_DATA(IDC_BACKGROUND_IMAGE);
 #undef GET_REG_DATA
@@ -523,8 +542,8 @@ BOOL JigsawMaker::RegFromData(HWND hwnd)
     SET_REG_DATA(IDC_PAGE_SIZE);
     SET_REG_DATA(IDC_PAGE_DIRECTION);
     SET_REG_DATA(IDC_FRAME_WIDTH);
-    SET_REG_DATA(IDC_PIECE_WIDTH);
-    SET_REG_DATA(IDC_PIECE_HEIGHT);
+    SET_REG_DATA(IDC_PIECE_SIZE);
+    SET_REG_DATA(IDC_PIECE_SHAPE);
     SET_REG_DATA(IDC_RANDOM_SEED);
     SET_REG_DATA(IDC_BACKGROUND_IMAGE);
 #undef SET_REG_DATA
@@ -752,7 +771,7 @@ void hpdf_draw_cut_lines(HPDF_Doc pdf, HPDF_Page page, double x, double y, doubl
         for (INT iColumn = 0; iColumn < columns; ++iColumn)
         {
             int sign = (std::rand() & 1) ? -1 : 1;
-            double tab_size = ((4 + std::rand() % 2) / 5.0) * cell_height / 3;
+            double tab_size = ((4 + std::rand() % 2) / 4.0) * cell_height / 3;
             double px0 = x + (iColumn + 0) * cell_width;
             double px1 = x + (iColumn + 1) * cell_width;
             double px_mid = (px0 + px1) / 2;
@@ -775,7 +794,7 @@ void hpdf_draw_cut_lines(HPDF_Doc pdf, HPDF_Page page, double x, double y, doubl
         for (INT iRow = 0; iRow < rows; ++iRow)
         {
             int sign = (std::rand() & 1) ? -1 : 1;
-            double tab_size = ((4 + std::rand() % 2) / 5.0) * cell_width / 3;
+            double tab_size = ((4 + std::rand() % 2) / 4.0) * cell_width / 3;
             double py0 = y + (iRow + 0) * cell_height;
             double py1 = y + (iRow + 1) * cell_height;
             double py_mid = (py0 + py1) / 2;
@@ -834,6 +853,10 @@ string_t JigsawMaker::JustDoIt(HWND hwnd)
         else
             page_size = HPDF_PAGE_SIZE_A4;
 
+        // ピースのサイズ(mm)。
+        double piece_size = wcstod(SETTING(IDC_PIECE_SIZE).c_str(), NULL) * 10;
+        assert(piece_size > 0);
+
         // フォント名。
         string_t font_name = TEXT("MS-PGothic");
 
@@ -842,7 +865,7 @@ string_t JigsawMaker::JustDoIt(HWND hwnd)
         auto frame_width_pixels = pixels_from_mm(frame_width_mm);
 
         // 線の太さ。
-        double border_width = pixels_from_mm(1);
+        double line_width = pixels_from_mm(0.8);
 
         HPDF_Page page; // ページオブジェクト。
         HPDF_Font font; // フォントオブジェクト。
@@ -867,7 +890,7 @@ string_t JigsawMaker::JustDoIt(HWND hwnd)
             content_height = page_height - frame_width_pixels * 2;
 
             // 線の幅を指定。
-            HPDF_Page_SetLineWidth(page, border_width);
+            HPDF_Page_SetLineWidth(page, line_width);
 
             // 線の色を RGB で設定する。PDF では RGB 各値を [0,1] で指定することになっている。
             HPDF_Page_SetRGBStroke(page, 0, 0, 0);
@@ -875,8 +898,22 @@ string_t JigsawMaker::JustDoIt(HWND hwnd)
             /* 塗りつぶしの色を RGB で設定する。PDF では RGB 各値を [0,1] で指定することになっている。*/
             HPDF_Page_SetRGBFill(page, 0, 0, 0);
 
-            int rows = 8;
-            int columns = 8;
+            // 行数と列数。
+            int columns = (int)(page_width / piece_size);
+            int rows = (int)(page_height / piece_size);
+            if (rows <= 0)
+                rows = 1;
+            if (columns <= 0)
+                columns = 1;
+            double piece_width = page_width / rows;
+            double piece_height = page_height / columns;
+            {
+                TCHAR szText[128];
+                StringCchPrintf(szText, _countof(szText), TEXT("%f, %f"), piece_width, piece_height);
+                MessageBox(hwnd, szText, NULL, 0);
+            }
+
+            // 乱数の種。
             int seed = _wtoi(SETTING(IDC_RANDOM_SEED).c_str());
 
             if (SETTING(IDC_BACKGROUND_IMAGE).size())
@@ -885,8 +922,7 @@ string_t JigsawMaker::JustDoIt(HWND hwnd)
                 {
                 case 0:
                     // 画像を描く。
-                    hpdf_draw_image(pdf, page, content_x, content_y, content_width, content_height,
-                                    SETTING(IDC_BACKGROUND_IMAGE));
+                    hpdf_draw_image(pdf, page, 0, 0, page_width, page_height, SETTING(IDC_BACKGROUND_IMAGE));
                     // カット線を描画する。
                     hpdf_draw_cut_lines(pdf, page, content_x, content_y, content_width, content_height, rows, columns, seed);
                     break;
@@ -896,8 +932,7 @@ string_t JigsawMaker::JustDoIt(HWND hwnd)
                     break;
                 case 2:
                     // 画像を描く。
-                    hpdf_draw_image(pdf, page, content_x, content_y, content_width, content_height,
-                                    SETTING(IDC_BACKGROUND_IMAGE));
+                    hpdf_draw_image(pdf, page, 0, 0, page_width, page_height, SETTING(IDC_BACKGROUND_IMAGE));
                     break;
                 }
             }

@@ -1,4 +1,4 @@
-// デジタルジグソーメーカー by katahiromz
+// ジグソーメイクPDF by katahiromz
 // Copyright (C) 2023 片山博文MZ. All Rights Reserved.
 // See README.txt and LICENSE.txt.
 #include <windows.h>        // Windowsの標準ヘッダ。
@@ -27,7 +27,7 @@
 
     SW_Shareware g_shareware(
         /* company registry key */      TEXT("Katayama Hirofumi MZ"),
-        /* application registry key */  TEXT("DigitalJigsawMaker"),
+        /* application registry key */  TEXT("JigsawMakePDF"),
         /* password hash */
         "3f92983c7aff94d3f6d10fccec5205048958ed06f910232a04b124bdaaebe879",
         /* trial days */                10,
@@ -73,7 +73,7 @@ struct FONT_ENTRY
 };
 
 // ガゾーナラベPDFのメインクラス。
-class JigsawMaker
+class JigsawMake
 {
 public:
     HINSTANCE m_hInstance;
@@ -82,10 +82,10 @@ public:
     std::map<string_t, string_t> m_settings;
 
     // コンストラクタ。
-    JigsawMaker(HINSTANCE hInstance, INT argc, LPTSTR *argv);
+    JigsawMake(HINSTANCE hInstance, INT argc, LPTSTR *argv);
 
     // デストラクタ。
-    ~JigsawMaker()
+    ~JigsawMake()
     {
     }
 
@@ -334,7 +334,7 @@ doLoadPic(LPCWSTR filename, int* width = NULL, int* height = NULL, float* dpi = 
 }
 
 // コンストラクタ。
-JigsawMaker::JigsawMaker(HINSTANCE hInstance, INT argc, LPTSTR *argv)
+JigsawMake::JigsawMake(HINSTANCE hInstance, INT argc, LPTSTR *argv)
     : m_hInstance(hInstance)
     , m_argc(argc)
     , m_argv(argv)
@@ -353,7 +353,7 @@ JigsawMaker::JigsawMaker(HINSTANCE hInstance, INT argc, LPTSTR *argv)
 #define IDC_BACKGROUND_IMAGE_DEFAULT TEXT("")
 
 // データをリセットする。
-void JigsawMaker::Reset()
+void JigsawMake::Reset()
 {
 #define SETTING(id) m_settings[TEXT(#id)]
     SETTING(IDC_PAGE_SIZE) = IDC_PAGE_SIZE_DEFAULT;
@@ -366,7 +366,7 @@ void JigsawMaker::Reset()
 }
 
 // ダイアログを初期化する。
-void JigsawMaker::InitDialog(HWND hwnd)
+void JigsawMake::InitDialog(HWND hwnd)
 {
     // IDC_PAGE_SIZE: 用紙サイズ。
     SendDlgItemMessage(hwnd, IDC_PAGE_SIZE, CB_ADDSTRING, 0, (LPARAM)doLoadString(IDS_A3));
@@ -400,7 +400,7 @@ void JigsawMaker::InitDialog(HWND hwnd)
 }
 
 // ダイアログからデータへ。
-BOOL JigsawMaker::DataFromDialog(HWND hwnd)
+BOOL JigsawMake::DataFromDialog(HWND hwnd)
 {
     TCHAR szText[MAX_PATH];
 
@@ -454,7 +454,7 @@ BOOL JigsawMaker::DataFromDialog(HWND hwnd)
 }
 
 // データからダイアログへ。
-BOOL JigsawMaker::DialogFromData(HWND hwnd)
+BOOL JigsawMake::DialogFromData(HWND hwnd)
 {
     // コンボボックスへデータを設定する。
 #define SET_COMBO_DATA(id) \
@@ -482,11 +482,11 @@ BOOL JigsawMaker::DialogFromData(HWND hwnd)
 }
 
 // レジストリからデータへ。
-BOOL JigsawMaker::DataFromReg(HWND hwnd)
+BOOL JigsawMake::DataFromReg(HWND hwnd)
 {
     // ソフト固有のレジストリキーを開く。
     HKEY hKey;
-    RegOpenKeyEx(HKEY_CURRENT_USER, TEXT("Software\\Katayama Hirofumi MZ\\DigitalJigsawMaker"), 0, KEY_READ, &hKey);
+    RegOpenKeyEx(HKEY_CURRENT_USER, TEXT("Software\\Katayama Hirofumi MZ\\JigsawMakePDF"), 0, KEY_READ, &hKey);
     if (!hKey)
         return FALSE; // 開けなかった。
 
@@ -515,7 +515,7 @@ BOOL JigsawMaker::DataFromReg(HWND hwnd)
 }
 
 // データからレジストリへ。
-BOOL JigsawMaker::RegFromData(HWND hwnd)
+BOOL JigsawMake::RegFromData(HWND hwnd)
 {
     HKEY hCompanyKey = NULL, hAppKey = NULL;
 
@@ -525,7 +525,7 @@ BOOL JigsawMaker::RegFromData(HWND hwnd)
         return FALSE; // 失敗。
 
     // ソフト固有のレジストリキーを作成または開く。
-    RegCreateKey(hCompanyKey, TEXT("DigitalJigsawMaker"), &hAppKey);
+    RegCreateKey(hCompanyKey, TEXT("JigsawMakePDF"), &hAppKey);
     if (hAppKey == NULL)
     {
         RegCloseKey(hCompanyKey);
@@ -1032,7 +1032,7 @@ void hpdf_draw_cut_lines(HPDF_Doc pdf, HPDF_Page page, double x, double y, doubl
 }
 
 // メインディッシュ処理。
-string_t JigsawMaker::JustDoIt(HWND hwnd)
+string_t JigsawMake::JustDoIt(HWND hwnd)
 {
     string_t ret;
     // PDFオブジェクトを作成する。
@@ -1240,7 +1240,7 @@ string_t JigsawMaker::JustDoIt(HWND hwnd)
 BOOL OnInitDialog(HWND hwnd, HWND hwndFocus, LPARAM lParam)
 {
     // ユーザデータ。
-    JigsawMaker* pJM = (JigsawMaker*)lParam;
+    JigsawMake* pJM = (JigsawMake*)lParam;
 
     // ユーザーデータをウィンドウハンドルに関連付ける。
     SetWindowLongPtr(hwnd, GWLP_USERDATA, lParam);
@@ -1287,7 +1287,7 @@ BOOL OnInitDialog(HWND hwnd, HWND hwndFocus, LPARAM lParam)
 BOOL OnOK(HWND hwnd)
 {
     // ユーザデータ。
-    JigsawMaker* pJM = (JigsawMaker*)GetWindowLongPtr(hwnd, GWLP_USERDATA);
+    JigsawMake* pJM = (JigsawMake*)GetWindowLongPtr(hwnd, GWLP_USERDATA);
 
     // 「処理中...」とボタンに表示する。
     HWND hButton = GetDlgItem(hwnd, IDC_GENERATE);
@@ -1324,7 +1324,7 @@ BOOL OnOK(HWND hwnd)
 void OnEraseSettings(HWND hwnd)
 {
     // ユーザーデータ。
-    JigsawMaker* pJM = (JigsawMaker*)GetWindowLongPtr(hwnd, GWLP_USERDATA);
+    JigsawMake* pJM = (JigsawMake*)GetWindowLongPtr(hwnd, GWLP_USERDATA);
 
     // データをリセットする。
     pJM->Reset();
@@ -1506,7 +1506,7 @@ DialogProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 }
 
 // ガゾーナラベのメイン関数。
-INT JigsawMaker_Main(HINSTANCE hInstance, INT argc, LPTSTR *argv)
+INT JigsawMake_Main(HINSTANCE hInstance, INT argc, LPTSTR *argv)
 {
     // アプリのインスタンスを保持する。
     g_hInstance = hInstance;
@@ -1524,7 +1524,7 @@ INT JigsawMaker_Main(HINSTANCE hInstance, INT argc, LPTSTR *argv)
 #endif
 
     // ユーザーデータを保持する。
-    JigsawMaker gn(hInstance, argc, argv);
+    JigsawMake gn(hInstance, argc, argv);
 
     // ユーザーデータをパラメータとしてダイアログを開く。
     DialogBoxParam(hInstance, MAKEINTRESOURCE(1), NULL, DialogProc, (LPARAM)&gn);
@@ -1544,10 +1544,10 @@ WinMain(HINSTANCE   hInstance,
     // wWinMainをサポートしていないコンパイラのために、コマンドラインの処理を行う。
     INT argc;
     LPWSTR *argv = CommandLineToArgvW(GetCommandLineW(), &argc);
-    INT ret = JigsawMaker_Main(hInstance, argc, argv);
+    INT ret = JigsawMake_Main(hInstance, argc, argv);
     LocalFree(argv);
     return ret;
 #else
-    return JigsawMaker_Main(hInstance, __argc, __argv);
+    return JigsawMake_Main(hInstance, __argc, __argv);
 #endif
 }

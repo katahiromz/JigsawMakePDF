@@ -739,14 +739,175 @@ void hpdf_draw_text(HPDF_Page page, HPDF_Font font, double font_size,
     }
 }
 
-void draw_curve(HPDF_Page page, double px0, double py0, double px1, double py1, double ratio)
+// 曲線を描画する。
+void draw_curve(HPDF_Page page, double px0, double py0, double px1, double py1, double ratio, double slant = 0.0)
 {
     double dx = px1 - px0;
     double dy = py1 - py0;
     double mid_x = (px0 + px1) / 2 - ratio * dy;
     double mid_y = (py0 + py1) / 2 + ratio * dx;
+    mid_x += slant * dx;
+    mid_y += slant * dy;
     HPDF_Page_CurveTo(page, px0, py0, mid_x, mid_y, px1, py1);
 }
+
+struct HCellParams
+{
+    double tab_size;
+    double qx1, qx2;
+    double slant1, slant2;
+    double delta;
+
+    HCellParams(int seed, double px0, double px1, double size)
+    {
+        switch (seed % 8)
+        {
+        case 0:
+            tab_size = size * 0.25;
+            qx1 = (2 * px0 + 1 * px1) / 3;
+            qx2 = (1 * px0 + 2 * px1) / 3;
+            slant1 = 0.6;
+            slant2 = 0;
+            delta = 0.8;
+            break;
+        case 1:
+            tab_size = size * 0.25;
+            qx1 = (3 * px0 + 2 * px1) / 5;
+            qx2 = (2 * px0 + 3 * px1) / 5;
+            slant1 = 0.7;
+            slant2 = 0.2;
+            delta = 0.8;
+            break;
+        case 2:
+            tab_size = size * 0.2;
+            qx1 = (5 * px0 + 3 * px1) / 8;
+            qx2 = (3 * px0 + 5 * px1) / 8;
+            slant1 = 0.6;
+            slant2 = 0;
+            delta = 0.8;
+            break;
+        case 3:
+            tab_size = size * 0.2;
+            qx1 = (3 * px0 + 2 * px1) / 5;
+            qx2 = (2 * px0 + 3 * px1) / 5;
+            slant1 = 0.75;
+            slant2 = 0;
+            delta = 0.8;
+            break;
+        case 4:
+            tab_size = size * 0.3;
+            qx1 = (3.5 * px0 + 2 * px1) / 5.5;
+            qx2 = (2 * px0 + 3.5 * px1) / 5.5;
+            slant1 = 0.75;
+            slant2 = 0.2;
+            delta = 0.4;
+            break;
+        case 5:
+            tab_size = size * 0.2;
+            qx1 = (3.5 * px0 + 2 * px1) / 5.5;
+            qx2 = (2 * px0 + 3.5 * px1) / 5.5;
+            slant1 = 0.75;
+            slant2 = 0;
+            delta = 0.4;
+            break;
+        case 6:
+            tab_size = size * 0.27;
+            qx1 = (4 * px0 + 2 * px1) / 6;
+            qx2 = (2 * px0 + 4 * px1) / 6;
+            slant1 = 0.75;
+            slant2 = -0.1;
+            delta = 0.7;
+            break;
+        case 7:
+            tab_size = size * 0.3;
+            qx1 = (3.5 * px0 + 2 * px1) / 5.5;
+            qx2 = (2 * px0 + 3.5 * px1) / 5.5;
+            slant1 = 0.75;
+            slant2 = 0;
+            delta = 0.4;
+            break;
+        }
+    }
+};
+
+struct VCellParams
+{
+    double tab_size;
+    double qy1, qy2;
+    double slant1, slant2;
+    double delta;
+
+    VCellParams(int seed, double py0, double py1, double size)
+    {
+        switch (seed % 8)
+        {
+        case 0:
+            tab_size = size * 0.25;
+            qy1 = (2 * py0 + 1 * py1) / 3;
+            qy2 = (1 * py0 + 2 * py1) / 3;
+            slant1 = 0.6;
+            slant2 = 0;
+            delta = 0.8;
+            break;
+        case 1:
+            tab_size = size * 0.25;
+            qy1 = (3 * py0 + 2 * py1) / 5;
+            qy2 = (2 * py0 + 3 * py1) / 5;
+            slant1 = 0.7;
+            slant2 = 0.2;
+            delta = 0.8;
+            break;
+        case 2:
+            tab_size = size * 0.2;
+            qy1 = (5 * py0 + 3 * py1) / 8;
+            qy2 = (3 * py0 + 5 * py1) / 8;
+            slant1 = 0.6;
+            slant2 = 0;
+            delta = 0.8;
+            break;
+        case 3:
+            tab_size = size * 0.2;
+            qy1 = (3 * py0 + 2 * py1) / 5;
+            qy2 = (2 * py0 + 3 * py1) / 5;
+            slant1 = 0.75;
+            slant2 = 0;
+            delta = 0.8;
+            break;
+        case 4:
+            tab_size = size * 0.3;
+            qy1 = (3.5 * py0 + 2 * py1) / 5.5;
+            qy2 = (2 * py0 + 3.5 * py1) / 5.5;
+            slant1 = 0.75;
+            slant2 = 0.2;
+            delta = 0.4;
+            break;
+        case 5:
+            tab_size = size * 0.2;
+            qy1 = (3.5 * py0 + 2 * py1) / 5.5;
+            qy2 = (2 * py0 + 3.5 * py1) / 5.5;
+            slant1 = 0.75;
+            slant2 = 0;
+            delta = 0.4;
+            break;
+        case 6:
+            tab_size = size * 0.27;
+            qy1 = (4 * py0 + 2 * py1) / 6;
+            qy2 = (2 * py0 + 4 * py1) / 6;
+            slant1 = 0.75;
+            slant2 = -0.1;
+            delta = 0.7;
+            break;
+        case 7:
+            tab_size = size * 0.3;
+            qy1 = (3.5 * py0 + 2 * py1) / 5.5;
+            qy2 = (2 * py0 + 3.5 * py1) / 5.5;
+            slant1 = 0.75;
+            slant2 = 0;
+            delta = 0.4;
+            break;
+        }
+    }
+};
 
 // カット線を描画する（通常ピース）。
 void hpdf_draw_cut_lines_normal(HPDF_Doc pdf, HPDF_Page page, double x, double y, double width, double height, int rows, int columns, int seed)
@@ -769,19 +930,16 @@ void hpdf_draw_cut_lines_normal(HPDF_Doc pdf, HPDF_Page page, double x, double y
         int sign = (iRow & 1) ? 1 : -1;
         for (INT iColumn = 0; iColumn < columns; ++iColumn)
         {
-            double tab_size = ((4 + std::rand() % 2) / 4.0) * cell_height / 3;
             double px0 = x + (iColumn + 0) * cell_width;
             double px1 = x + (iColumn + 1) * cell_width;
-            double px_mid = (px0 + px1) / 2;
-            double px_mid_1 = (2 * px0 + 1 * px1) / 3;
-            double px_mid_2 = (1 * px0 + 2 * px1) / 3;
             double py = y + iRow * cell_height;
-            double magnitude = (2 + std::rand() % 2) * 0.2;
+            double px_mid = (px0 + px1) / 2;
+            HCellParams params(std::rand(), px0, px1, cell_height);
             HPDF_Page_MoveTo(page, px0, py);
-            draw_curve(page, px0, py, px_mid_1, py, -0.2 * sign);
-            draw_curve(page, px_mid_1, py, px_mid, py + sign * tab_size * magnitude, magnitude * sign);
-            draw_curve(page, px_mid, py + sign * tab_size * magnitude, px_mid_2, py, magnitude * sign);
-            draw_curve(page, px_mid_2, py, px1, py, -0.2 * sign);
+            draw_curve(page, px0, py, params.qx1, py, -params.delta * sign, params.slant1);
+            draw_curve(page, params.qx1, py, px_mid, py + params.tab_size * sign, 0.8 * sign, params.slant2);
+            draw_curve(page, px_mid, py + params.tab_size * sign, params.qx2, py, 0.8 * sign, -params.slant2);
+            draw_curve(page, params.qx2, py, px1, py, -params.delta * sign, -params.slant1);
             HPDF_Page_Stroke(page);
             sign = -sign;
         }
@@ -790,22 +948,19 @@ void hpdf_draw_cut_lines_normal(HPDF_Doc pdf, HPDF_Page page, double x, double y
     // 縦線を描く。
     for (INT iColumn = 1; iColumn < columns; ++iColumn)
     {
-        int sign = (iColumn & 1) ? -1 : 1;
+        int sign = (iColumn & 1) ? 1 : -1;
         for (INT iRow = 0; iRow < rows; ++iRow)
         {
-            double tab_size = ((4 + std::rand() % 2) / 4.0) * cell_width / 3;
             double py0 = y + (iRow + 0) * cell_height;
             double py1 = y + (iRow + 1) * cell_height;
-            double py_mid = (py0 + py1) / 2;
-            double py_mid_1 = (2 * py0 + 1 * py1) / 3;
-            double py_mid_2 = (1 * py0 + 2 * py1) / 3;
             double px = x + iColumn * cell_width;
-            double magnitude = (2 + std::rand() % 2) * 0.2;
+            double py_mid = (py0 + py1) / 2;
+            VCellParams params(std::rand(), py0, py1, cell_width);
             HPDF_Page_MoveTo(page, px, py0);
-            draw_curve(page, px, py0, px, py_mid_1, 0.2 * sign);
-            draw_curve(page, px, py_mid_1, px + sign * tab_size * magnitude, py_mid, -magnitude * sign);
-            draw_curve(page, px + sign * tab_size * magnitude, py_mid, px, py_mid_2, -magnitude * sign);
-            draw_curve(page, px, py_mid_2, px, py1, 0.2 * sign);
+            draw_curve(page, px, py0, px, params.qy1, -params.delta * sign, params.slant1);
+            draw_curve(page, px, params.qy1, px - params.tab_size * sign, py_mid, 0.8 * sign, -params.slant2);
+            draw_curve(page, px - params.tab_size * sign, py_mid, px, params.qy2, 0.8 * sign, params.slant2);
+            draw_curve(page, px, params.qy2, px, py1, -params.delta * sign, -params.slant1);
             HPDF_Page_Stroke(page);
             sign = -sign;
         }
@@ -833,19 +988,16 @@ void hpdf_draw_cut_lines_abnormal(HPDF_Doc pdf, HPDF_Page page, double x, double
         for (INT iColumn = 0; iColumn < columns; ++iColumn)
         {
             int sign = (std::rand() & 1) ? -1 : 1;
-            double tab_size = ((4 + std::rand() % 2) / 4.0) * cell_height / 3;
             double px0 = x + (iColumn + 0) * cell_width;
             double px1 = x + (iColumn + 1) * cell_width;
-            double px_mid = (px0 + px1) / 2;
-            double px_mid_1 = (2 * px0 + 1 * px1) / 3;
-            double px_mid_2 = (1 * px0 + 2 * px1) / 3;
             double py = y + iRow * cell_height;
-            double magnitude = (2 + std::rand() % 2) * 0.2;
+            double px_mid = (px0 + px1) / 2;
+            HCellParams params(std::rand(), px0, px1, cell_height);
             HPDF_Page_MoveTo(page, px0, py);
-            draw_curve(page, px0, py, px_mid_1, py, -0.2 * sign);
-            draw_curve(page, px_mid_1, py, px_mid, py + sign * tab_size * magnitude, magnitude * sign);
-            draw_curve(page, px_mid, py + sign * tab_size * magnitude, px_mid_2, py, magnitude * sign);
-            draw_curve(page, px_mid_2, py, px1, py, -0.2 * sign);
+            draw_curve(page, px0, py, params.qx1, py, -params.delta * sign, params.slant1);
+            draw_curve(page, params.qx1, py, px_mid, py + params.tab_size * sign, 0.8 * sign, params.slant2);
+            draw_curve(page, px_mid, py + params.tab_size * sign, params.qx2, py, 0.8 * sign, -params.slant2);
+            draw_curve(page, params.qx2, py, px1, py, -params.delta * sign, -params.slant1);
             HPDF_Page_Stroke(page);
             sign = -sign;
         }
@@ -857,19 +1009,16 @@ void hpdf_draw_cut_lines_abnormal(HPDF_Doc pdf, HPDF_Page page, double x, double
         for (INT iRow = 0; iRow < rows; ++iRow)
         {
             int sign = (std::rand() & 1) ? -1 : 1;
-            double tab_size = ((4 + std::rand() % 2) / 4.0) * cell_width / 3;
             double py0 = y + (iRow + 0) * cell_height;
             double py1 = y + (iRow + 1) * cell_height;
-            double py_mid = (py0 + py1) / 2;
-            double py_mid_1 = (2 * py0 + 1 * py1) / 3;
-            double py_mid_2 = (1 * py0 + 2 * py1) / 3;
             double px = x + iColumn * cell_width;
-            double magnitude = (2 + std::rand() % 2) * 0.2;
+            double py_mid = (py0 + py1) / 2;
+            VCellParams params(std::rand(), py0, py1, cell_width);
             HPDF_Page_MoveTo(page, px, py0);
-            draw_curve(page, px, py0, px, py_mid_1, 0.2 * sign);
-            draw_curve(page, px, py_mid_1, px + sign * tab_size * magnitude, py_mid, -magnitude * sign);
-            draw_curve(page, px + sign * tab_size * magnitude, py_mid, px, py_mid_2, -magnitude * sign);
-            draw_curve(page, px, py_mid_2, px, py1, 0.2 * sign);
+            draw_curve(page, px, py0, px, params.qy1, -params.delta * sign, params.slant1);
+            draw_curve(page, px, params.qy1, px - params.tab_size * sign, py_mid, 0.8 * sign, -params.slant2);
+            draw_curve(page, px - params.tab_size * sign, py_mid, px, params.qy2, 0.8 * sign, params.slant2);
+            draw_curve(page, px, params.qy2, px, py1, -params.delta * sign, -params.slant1);
             HPDF_Page_Stroke(page);
             sign = -sign;
         }

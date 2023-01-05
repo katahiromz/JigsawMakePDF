@@ -26,6 +26,8 @@
 #define IDS_FIELD_PIECE_SIZE                120
 #define IDS_REASON_EMPTY_STRING             121
 #define IDS_REASON_POSITIVE_REAL            122
+#define IDS_BACKGROUND                      123
+#define IDS_REASON_VALID_IMAGE              124
 
 #ifdef APSTUDIO_INVOKED
     #ifndef APSTUDIO_READONLY_SYMBOLS

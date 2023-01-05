@@ -347,7 +347,7 @@ JigsawMake::JigsawMake(HINSTANCE hInstance, INT argc, LPTSTR *argv)
 #define IDC_PAGE_SIZE_DEFAULT doLoadString(IDS_A4)
 #define IDC_PAGE_DIRECTION_DEFAULT doLoadString(IDS_LANDSCAPE)
 #define IDC_FRAME_WIDTH_DEFAULT TEXT("10")
-#define IDC_PIECE_SIZE_DEFAULT TEXT("5.0")
+#define IDC_PIECE_SIZE_DEFAULT TEXT("3.0")
 #define IDC_PIECE_SHAPE_DEFAULT doLoadString(IDS_NORMAL_SHAPE)
 #define IDC_RANDOM_SEED_DEFAULT TEXT("0")
 #define IDC_BACKGROUND_IMAGE_DEFAULT TEXT("")
@@ -439,6 +439,12 @@ BOOL JigsawMake::DataFromDialog(HWND hwnd)
 
     ::GetDlgItemText(hwnd, IDC_BACKGROUND_IMAGE, szText, _countof(szText));
     str_trim(szText);
+    if (!isValidImageFile(szText))
+    {
+        SETTING(IDC_BACKGROUND_IMAGE) = IDC_BACKGROUND_IMAGE_DEFAULT;
+        OnInvalidString(hwnd, IDC_BACKGROUND_IMAGE, IDS_BACKGROUND, IDS_REASON_VALID_IMAGE);
+        return FALSE;
+    }
     SETTING(IDC_BACKGROUND_IMAGE) = szText;
 
     // チェックボックスからデータを取得する。
@@ -1139,30 +1145,22 @@ string_t JigsawMake::JustDoIt(HWND hwnd)
             // 乱数の種。
             int seed = _wtoi(SETTING(IDC_RANDOM_SEED).c_str());
 
-            if (SETTING(IDC_BACKGROUND_IMAGE).size())
+            switch (iPage)
             {
-                switch (iPage)
-                {
-                case 0:
-                    // 画像を描く。
-                    hpdf_draw_image(pdf, page, 0, 0, page_width, page_height, SETTING(IDC_BACKGROUND_IMAGE));
-                    // カット線を描画する。
-                    hpdf_draw_cut_lines(pdf, page, content_x, content_y, content_width, content_height, rows, columns, seed, abnormal);
-                    break;
-                case 1:
-                    // カット線を描画する。
-                    hpdf_draw_cut_lines(pdf, page, content_x, content_y, content_width, content_height, rows, columns, seed, abnormal);
-                    break;
-                case 2:
-                    // 画像を描く。
-                    hpdf_draw_image(pdf, page, 0, 0, page_width, page_height, SETTING(IDC_BACKGROUND_IMAGE));
-                    break;
-                }
-            }
-            else
-            {
+            case 0:
+                // 画像を描く。
+                hpdf_draw_image(pdf, page, 0, 0, page_width, page_height, SETTING(IDC_BACKGROUND_IMAGE));
                 // カット線を描画する。
                 hpdf_draw_cut_lines(pdf, page, content_x, content_y, content_width, content_height, rows, columns, seed, abnormal);
+                break;
+            case 1:
+                // カット線を描画する。
+                hpdf_draw_cut_lines(pdf, page, content_x, content_y, content_width, content_height, rows, columns, seed, abnormal);
+                break;
+            case 2:
+                // 画像を描く。
+                hpdf_draw_image(pdf, page, 0, 0, page_width, page_height, SETTING(IDC_BACKGROUND_IMAGE));
+                break;
             }
 
 #ifndef NO_SHAREWARE
@@ -1187,12 +1185,6 @@ string_t JigsawMake::JustDoIt(HWND hwnd)
                 HPDF_Page_EndText(page);
             }
 #endif
-
-            // 画像未指定ならば1ページのみ。
-            if (SETTING(IDC_BACKGROUND_IMAGE).empty())
-            {
-                break;
-            }
         }
 
         {

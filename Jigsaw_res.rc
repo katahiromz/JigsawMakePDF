@@ -55,6 +55,18 @@ FONT 9, "メイリオ"
     PUSHBUTTON "設定の初期化", psh2, 5, 125, 80, 15
 }
 
+2 DIALOG 0, 0, 165, 135
+CAPTION "画像と用紙の縦横比について"
+STYLE DS_CENTER | DS_MODALFRAME | WS_POPUPWINDOW | WS_CAPTION
+FONT 9, "メイリオ"
+{
+    LTEXT "画像と用紙の縦横比が大きく異なります。\r\n\r\n処理を指定して下さい。", -1, 5, 10, 155, 30
+    AUTORADIOBUTTON "縦横比を無視して用紙全体に引き延ばす(&S)", rad1, 5, 50, 155, 15, WS_TABSTOP
+    AUTORADIOBUTTON "縦横比を考慮して用紙の端まで拡大する(&F)", rad2, 5, 70, 155, 20, WS_TABSTOP
+    DEFPUSHBUTTON "OK", IDOK, 35, 100, 60, 25
+    PUSHBUTTON "キャンセル", IDCANCEL, 100, 100, 60, 25
+}
+
 //////////////////////////////////////////////////////////////////////////////
 // RT_VERSION
 
@@ -110,6 +122,8 @@ STRINGTABLE
     IDS_FIELD_PIECE_SIZE, "ピースの形状"
     IDS_REASON_EMPTY_STRING, "空ではない文字列を指定して下さい。"
     IDS_REASON_POSITIVE_REAL, "正の実数を指定して下さい。"
+    IDS_BACKGROUND, "背景画像"
+    IDS_REASON_VALID_IMAGE, "有効な画像ファイルを指定して下さい。"
 }
 
 //////////////////////////////////////////////////////////////////////////////

@@ -1270,8 +1270,15 @@ string_t JigsawMake::JustDoIt(HWND hwnd)
         }
 
         {
-            // 出力ファイル名のタグを置き換える。
-            string_t text = TEXT("output.pdf");
+            // 現在の日時を取得する。
+            SYSTEMTIME st;
+            ::GetLocalTime(&st);
+
+            // 出力ファイル名。
+            TCHAR output_filename[MAX_PATH];
+            StringCchPrintf(output_filename, _countof(output_filename),
+                doLoadString(IDS_OUTPUT_NAME),
+                st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond);
 
             // PDFを一時ファイルに保存する。
             TempFile temp_file(TEXT("GN2"), TEXT(".pdf"));
@@ -1281,7 +1288,7 @@ string_t JigsawMake::JustDoIt(HWND hwnd)
             // デスクトップにファイルをコピー。
             TCHAR szPath[MAX_PATH];
             SHGetSpecialFolderPath(hwnd, szPath, CSIDL_DESKTOPDIRECTORY, FALSE);
-            PathAppend(szPath, text.c_str());
+            PathAppend(szPath, output_filename);
             if (!CopyFile(temp_file.get(), szPath, FALSE))
             {
                 auto err_msg = ansi_from_wide(CP_ACP, doLoadString(IDS_COPYFILEFAILED));
@@ -1289,7 +1296,7 @@ string_t JigsawMake::JustDoIt(HWND hwnd)
             }
 
             // 成功メッセージを表示。
-            StringCchCopy(szPath, _countof(szPath), text.c_str());
+            StringCchCopy(szPath, _countof(szPath), output_filename);
             TCHAR szText[MAX_PATH];
             StringCchPrintf(szText, _countof(szText), doLoadString(IDS_SUCCEEDED), szPath);
             ret = szText;

@@ -118,8 +118,6 @@ STRINGTABLE
     IDS_OPENFILTER, "画像ファイル (*.jpg;*.gif;*.png;*.tif;*.bmp;*.wmf;*.emf;*.ico;*.cur)|*.jpg;*.jpeg;*.jpe;*.jfif;*.gif;*.png;*.tif;*.tiff;*.bmp;*.dib;*.wmf;*.emf;*.ico;*.cur|JPEG 画像 (*.jpg;*.jpeg;*.jpe;*.jfif)|*.jpg;*.jpeg;*.jpe;*.jfif|GIF 画像 (*.gif)|*.gif|PNG 画像 (*.png)|*.png|TIFF 画像 (*.tif;*.tiff)|*.tif;*.tiff|ビットマップ (*.bmp;*.dib)|*.bmp;*.dib|WMF (*.wmf)|*.wmf|EMF (*.emf)|*.emf|アイコン ファイル (*.ico)|*.ico|カーソル ファイル (*.cur)|*.cur|すべてのファイル (*.*)|*.*|"
     IDS_SET_BACKGROUND_IMAGE, "背景画像ファイルを指定"
     IDS_SUSIE_IMAGES, "Susie 画像ファイル"
-    IDS_NORMAL_SHAPE, "通常ピース"
-    IDS_ABNORMAL_SHAPE, "変形ピース"
     IDS_FIELD_PIECE_SIZE, "ピースの形状"
     IDS_REASON_EMPTY_STRING, "空ではない文字列を指定して下さい。"
     IDS_REASON_POSITIVE_REAL, "正の実数を指定して下さい。"
@@ -128,6 +126,7 @@ STRINGTABLE
     IDS_FIELD_TEXT_COLOR, "テキストの色"
     IDS_REASON_VALID_COLOR, "有効な色を指定して下さい。"
     IDS_CANT_LOAD_IMAGE, "画像ファイルが読み込めませんでした。"
+    IDS_OUTPUT_NAME, "ジグソーパズル%04u-%02u-%02u-%02u-%02u-%02u.pdf"
 }
 
 //////////////////////////////////////////////////////////////////////////////

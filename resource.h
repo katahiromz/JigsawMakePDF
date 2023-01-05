@@ -21,8 +21,6 @@
 #define IDS_OPENFILTER                      115
 #define IDS_SET_BACKGROUND_IMAGE            116
 #define IDS_SUSIE_IMAGES                    117
-#define IDS_NORMAL_SHAPE                    118
-#define IDS_ABNORMAL_SHAPE                  119
 #define IDS_FIELD_PIECE_SIZE                120
 #define IDS_REASON_EMPTY_STRING             121
 #define IDS_REASON_POSITIVE_REAL            122
@@ -31,6 +29,7 @@
 #define IDS_FIELD_TEXT_COLOR                125
 #define IDS_REASON_VALID_COLOR              126
 #define IDS_CANT_LOAD_IMAGE                 127
+#define IDS_OUTPUT_NAME                     128
 
 #ifdef APSTUDIO_INVOKED
     #ifndef APSTUDIO_READONLY_SYMBOLS

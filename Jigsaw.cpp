@@ -33,7 +33,7 @@
         "3f92983c7aff94d3f6d10fccec5205048958ed06f910232a04b124bdaaebe879",
         /* trial days */                10,
         /* salt string */               "jade3YYyR1",
-        /* version string */            "0.9.0");
+        /* version string */            "0.9.1");
 #endif
 
 // 文字列クラス。
@@ -74,7 +74,7 @@ struct FONT_ENTRY
     int m_index = -1;
 };
 
-// ガゾーナラベPDFのメインクラス。
+// ジグソーメイクPDFのメインクラス。
 class JigsawMake
 {
 public:
@@ -1671,7 +1671,7 @@ DialogProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     return 0;
 }
 
-// ガゾーナラベのメイン関数。
+// ジグソーメイクPDFのメイン関数。
 INT JigsawMake_Main(HINSTANCE hInstance, INT argc, LPTSTR *argv)
 {
     // アプリのインスタンスを保持する。

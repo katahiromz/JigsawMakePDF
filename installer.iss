@@ -2,7 +2,7 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "ジグソーメイクPDF"
-#define MyAppVersion "0.9.0"
+#define MyAppVersion "0.9.1"
 #define MyAppPublisher "片山博文MZ"
 #define MyAppURL "https://katahiromz.web.fc2.com/"
 #define MyAppExeName "Jigsaw.exe"
@@ -13,7 +13,7 @@
 ; NOTE: The value of AppId uniquely identifies this application.
 ; Do not use the same AppId value in installers for other applications.
 ; (To generate a new GUID, click Tools | Generate GUID inside the IDE.)
-AppId={{38720DA3-2036-4103-A89C-62A8C5FC057D}
+AppId={{38720DA3-4036-4103-A89C-62A8C5FC057D}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 ;AppVerName={#MyAppName} {#MyAppVersion}

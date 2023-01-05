@@ -12,7 +12,7 @@ All Rights Reserved.
 
 ## 購入場所
 
-- Vector https://www.vector.co.jp のガゾーナラベPDFのページ。
+- Vector https://www.vector.co.jp のジグソーメイクPDFのページ。
 
 ## 試用期間
 
@@ -20,7 +20,7 @@ All Rights Reserved.
 
 ## 制限内容
 
-試用期間中は、ページの左下に『「ジグソーメイクPDFPDF」買ってね』と出力されます。
+試用期間中は、ページの左下に『「ジグソーメイクPDF」買ってね』と出力されます。
 
 ## 免責事項
 

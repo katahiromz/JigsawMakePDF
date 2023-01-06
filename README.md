@@ -4,7 +4,15 @@
 
 「ジグソーメイクPDF」は、画像を使ってジグソーパズルのPDFを作成するソフトです。
 
+<p align="center">
+	<img src="img/screenshot.png" alt="[スクリーンショット]" />
+</p>
+
 完成したPDFファイルはデスクトップに作成されます。
+
+<p align="center">
+	<img src="img/screenshot2.png" alt="[スクリーンショット]" />
+</p>
 
 ## 対応環境
 

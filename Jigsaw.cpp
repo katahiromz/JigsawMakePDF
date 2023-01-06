@@ -1604,7 +1604,7 @@ void OnBackgroundImage(HWND hwnd)
 
     // 拡大縮小後のサイズを計算する。
     int stretch_width, stretch_height;
-#define MAX_IMAGE_SIZE 140
+#define MAX_IMAGE_SIZE 110
     if (width > height)
     {
         stretch_width = MAX_IMAGE_SIZE;

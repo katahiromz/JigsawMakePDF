@@ -31,6 +31,19 @@ LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
 LANGUAGE LANG_JAPANESE, SUBLANG_DEFAULT
 
 //////////////////////////////////////////////////////////////////////////////
+// RT_MENU
+
+1 MENU
+{
+    POPUP "ポップアップ #0"
+    {
+        MENUITEM "開く(&O)", IDC_MENU_OPEN
+        MENUITEM SEPARATOR
+        MENUITEM "プロパティ(&P)", IDC_MENU_PROP
+    }
+}
+
+//////////////////////////////////////////////////////////////////////////////
 // RT_DIALOG
 
 1 DIALOG 0, 0, 275, 145
@@ -56,7 +69,7 @@ FONT 9, "メイリオ"
     LTEXT "乱数の種:", stc7, 5, 105, 65, 10, SS_CENTERIMAGE | SS_NOTIFY | NOT WS_GROUP
     EDITTEXT edt2, 70, 105, 41, 12, ES_NUMBER | ES_AUTOHSCROLL
     CONTROL "", scr1, "msctls_updown32", UDS_AUTOBUDDY | UDS_ALIGNRIGHT | UDS_SETBUDDYINT, 110, 110, 13, 13
-    CONTROL "", ico1, "STATIC", SS_BITMAP | SS_NOTIFY | WS_GROUP, 170, 5, 99, 64
+    CONTROL "", ico1, "STATIC", SS_NOTIFY | SS_BITMAP | WS_GROUP, 170, 5, 99, 64
     DEFPUSHBUTTON "生成", IDOK, 150, 120, 65, 20
     PUSHBUTTON "終了", IDCANCEL, 220, 120, 50, 20
     PUSHBUTTON "設定の初期化", psh2, 5, 125, 80, 15

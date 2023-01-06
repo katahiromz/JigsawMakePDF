@@ -62,6 +62,7 @@ enum
     IDC_ERASE_SETTINGS = psh2,
     IDC_LINE_COLOR = edt8,
     IDC_LINE_COLOR_BUTTON = psh8,
+    IDC_PREVIEW = ico1,
 };
 
 // Susieプラグイン マネジャー。
@@ -1557,6 +1558,20 @@ void OnDrawItem(HWND hwnd, const DRAWITEMSTRUCT * lpDrawItem)
     ::DeleteObject(hbr);
 }
 
+// 「プレビュー」をダブルクリックされた。
+void OnPreviewDoubleClick(HWND hwnd)
+{
+    // テキストを取得。
+    TCHAR szFile[MAX_PATH];
+    ::GetDlgItemText(hwnd, IDC_BACKGROUND_IMAGE, szFile, _countof(szFile));
+    str_trim(szFile);
+
+    if (szFile[0])
+    {
+        ShellExecute(hwnd, NULL, szFile, NULL, NULL, SW_SHOWNORMAL);
+    }
+}
+
 // 「背景画像」テキストボックス。
 void OnBackgroundImage(HWND hwnd)
 {
@@ -1574,7 +1589,7 @@ void OnBackgroundImage(HWND hwnd)
         ::DeleteObject(pJM->m_hbmPreview);
         pJM->m_hbmPreview = NULL;
     }
-    ::SendDlgItemMessage(hwnd, ico1, STM_SETIMAGE, IMAGE_BITMAP, (LPARAM)NULL);
+    ::SendDlgItemMessage(hwnd, IDC_PREVIEW, STM_SETIMAGE, IMAGE_BITMAP, (LPARAM)NULL);
 
     if (szFile[0] == 0 || !isValidImageFile(szFile))
     {
@@ -1617,7 +1632,27 @@ void OnBackgroundImage(HWND hwnd)
 
     // ビットマップをセットする。
     pJM->m_hbmPreview = hbmStretch;
-    ::SendDlgItemMessage(hwnd, ico1, STM_SETIMAGE, IMAGE_BITMAP, (LPARAM)hbmStretch);
+    ::SendDlgItemMessage(hwnd, IDC_PREVIEW, STM_SETIMAGE, IMAGE_BITMAP, (LPARAM)hbmStretch);
+}
+
+// プレビューのプロパティを開く。
+void OnPreviewProp(HWND hwnd)
+{
+    // テキストを取得。
+    TCHAR szFile[MAX_PATH];
+    ::GetDlgItemText(hwnd, IDC_BACKGROUND_IMAGE, szFile, _countof(szFile));
+    str_trim(szFile);
+
+    if (szFile[0] == 0 || !isValidImageFile(szFile))
+        return;
+
+    // ファイルのプロパティを開く。
+    SHELLEXECUTEINFO info = { sizeof(info) };
+    info.lpFile = szFile;
+    info.nShow = SW_SHOWNORMAL;
+    info.fMask = SEE_MASK_INVOKEIDLIST;
+    info.lpVerb = TEXT("properties");
+    ShellExecuteEx(&info);
 }
 
 // WM_COMMAND
@@ -1652,6 +1687,18 @@ void OnCommand(HWND hwnd, int id, HWND hwndCtl, UINT codeNotify)
         {
             OnBackgroundImage(hwnd);
         }
+        break;
+    case IDC_PREVIEW:
+        if (codeNotify == STN_DBLCLK)
+        {
+            OnPreviewDoubleClick(hwnd);
+        }
+        break;
+    case IDC_MENU_OPEN: // プレビューを開く。
+        OnPreviewDoubleClick(hwnd);
+        break;
+    case IDC_MENU_PROP: // プレビューのプロパティを開く。
+        OnPreviewProp(hwnd);
         break;
     case stc1:
         // コンボボックスの前のラベルをクリックしたら、対応するコンボボックスにフォーカスを当てる。
@@ -1719,6 +1766,57 @@ void OnDropFiles(HWND hwnd, HDROP hdrop)
     ::DragFinish(hdrop);
 }
 
+// WM_CONTEXTMENU
+void OnContextMenu(HWND hwnd, HWND hwndContext, UINT xPos, UINT yPos)
+{
+    // プレビュー。
+    HWND hPreview = ::GetDlgItem(hwnd, IDC_PREVIEW);
+
+    // 対象でなければ無視。
+    if (hPreview != hwndContext)
+        return;
+
+    // テキストを取得。
+    TCHAR szFile[MAX_PATH];
+    ::GetDlgItemText(hwnd, IDC_BACKGROUND_IMAGE, szFile, _countof(szFile));
+    str_trim(szFile);
+
+    // 画像ファイルがなければ無視。
+    if (szFile[0] == 0 || !isValidImageFile(szFile))
+        return;
+
+    if (xPos == 0xFFFF && yPos == 0xFFFF) // キーボードからメニューが開かれたか？
+    {
+        // メニューの位置をリストボックスに合わせる。
+        RECT rc;
+        ::GetWindowRect(hwndContext, &rc);
+        xPos = rc.left;
+        yPos = rc.top;
+    }
+
+    // メニューを読み込む。
+    HMENU hMenu = ::LoadMenu(g_hInstance, MAKEINTRESOURCE(1));
+    HMENU hPopupMenu = ::GetSubMenu(hMenu, 0);
+
+    // 「開く」項目を太字に。
+    MENUITEMINFO info = { sizeof(info), MIIM_STATE };
+    ::GetMenuItemInfo(hPopupMenu, IDC_MENU_OPEN, FALSE, &info);
+    info.fState |= MFS_DEFAULT;
+    ::SetMenuItemInfo(hPopupMenu, IDC_MENU_OPEN, FALSE, &info);
+
+    // メニューを表示してユーザーからの選択を待つ。
+    ::SetForegroundWindow(hwnd); // TrackPopupMenuのバグ回避。
+    INT id = ::TrackPopupMenu(hPopupMenu, TPM_RETURNCMD | TPM_RIGHTBUTTON,
+                              xPos, yPos, 0, hwnd, NULL);
+    ::PostMessage(hwnd, WM_NULL, 0, 0); // TrackPopupMenuのバグ回避。
+
+    // 選択項目が有効ならばWM_COMMANDメッセージを投函する。
+    if (id != 0 && id != -1)
+    {
+        ::PostMessage(hwnd, WM_COMMAND, id, 0);
+    }
+}
+
 // WM_DESTROY
 // ウィンドウが破棄された。
 void OnDestroy(HWND hwnd)
@@ -1742,6 +1840,7 @@ DialogProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         HANDLE_MSG(hwnd, WM_DRAWITEM, OnDrawItem);
         HANDLE_MSG(hwnd, WM_COMMAND, OnCommand);
         HANDLE_MSG(hwnd, WM_DROPFILES, OnDropFiles);
+        HANDLE_MSG(hwnd, WM_CONTEXTMENU, OnContextMenu);
         HANDLE_MSG(hwnd, WM_DESTROY, OnDestroy);
     }
     return 0;

@@ -33,7 +33,7 @@
         "3f92983c7aff94d3f6d10fccec5205048958ed06f910232a04b124bdaaebe879",
         /* trial days */                10,
         /* salt string */               "jade3YYyR1",
-        /* version string */            "0.9.1");
+        /* version string */            "0.9.2");
 #endif
 
 // 文字列クラス。

@@ -82,6 +82,7 @@ public:
     INT m_argc;
     LPTSTR *m_argv;
     std::map<string_t, string_t> m_settings;
+    HBITMAP m_hbmPreview;
 
     // コンストラクタ。
     JigsawMake(HINSTANCE hInstance, INT argc, LPTSTR *argv);
@@ -89,6 +90,11 @@ public:
     // デストラクタ。
     ~JigsawMake()
     {
+        if (m_hbmPreview)
+        {
+            ::DeleteObject(m_hbmPreview);
+            m_hbmPreview = NULL;
+        }
     }
 
     // データをリセットする。
@@ -340,6 +346,7 @@ JigsawMake::JigsawMake(HINSTANCE hInstance, INT argc, LPTSTR *argv)
     : m_hInstance(hInstance)
     , m_argc(argc)
     , m_argv(argv)
+    , m_hbmPreview(NULL)
 {
     // データをリセットする。
     Reset();
@@ -1550,6 +1557,69 @@ void OnDrawItem(HWND hwnd, const DRAWITEMSTRUCT * lpDrawItem)
     ::DeleteObject(hbr);
 }
 
+// 「背景画像」テキストボックス。
+void OnBackgroundImage(HWND hwnd)
+{
+    // ユーザーデータ。
+    JigsawMake* pJM = (JigsawMake*)GetWindowLongPtr(hwnd, GWLP_USERDATA);
+
+    // テキストを取得。
+    TCHAR szFile[MAX_PATH];
+    ::GetDlgItemText(hwnd, IDC_BACKGROUND_IMAGE, szFile, _countof(szFile));
+    str_trim(szFile);
+
+    // プレビューを破棄する。
+    if (pJM->m_hbmPreview)
+    {
+        ::DeleteObject(pJM->m_hbmPreview);
+        pJM->m_hbmPreview = NULL;
+    }
+    ::SendDlgItemMessage(hwnd, ico1, STM_SETIMAGE, IMAGE_BITMAP, (LPARAM)NULL);
+
+    if (szFile[0] == 0 || !isValidImageFile(szFile))
+    {
+        return;
+    }
+
+    // 画像を読み込む。
+    int width, height;
+    HBITMAP hbm = gpimage_load(szFile, &width, &height);
+    if (hbm == NULL)
+        return;
+
+    // 拡大縮小後のサイズを計算する。
+    int stretch_width, stretch_height;
+#define MAX_IMAGE_SIZE 140
+    if (width > height)
+    {
+        stretch_width = MAX_IMAGE_SIZE;
+        stretch_height = MAX_IMAGE_SIZE * height / width;
+    }
+    else
+    {
+        stretch_height = MAX_IMAGE_SIZE;
+        stretch_width = MAX_IMAGE_SIZE * width / height;
+    }
+
+    // ゼロにならないように補正する。
+    if (stretch_width <= 0)
+        stretch_width = 1;
+    if (stretch_height <= 0)
+        stretch_height = 1;
+
+    // 拡大縮小する。
+    HBITMAP hbmStretch = gpimage_resize(hbm, stretch_width, stretch_height);
+    ::DeleteObject(hbm);
+    if (hbmStretch == NULL)
+    {
+        return;
+    }
+
+    // ビットマップをセットする。
+    pJM->m_hbmPreview = hbmStretch;
+    ::SendDlgItemMessage(hwnd, ico1, STM_SETIMAGE, IMAGE_BITMAP, (LPARAM)hbmStretch);
+}
+
 // WM_COMMAND
 // コマンド。
 void OnCommand(HWND hwnd, int id, HWND hwndCtl, UINT codeNotify)
@@ -1576,6 +1646,12 @@ void OnCommand(HWND hwnd, int id, HWND hwndCtl, UINT codeNotify)
         break;
     case IDC_LINE_COLOR_BUTTON: // 「カット線の色」ボタン。
         OnLineColorButton(hwnd);
+        break;
+    case IDC_BACKGROUND_IMAGE: // 「背景画像」テキストボックス。
+        if (codeNotify == EN_CHANGE)
+        {
+            OnBackgroundImage(hwnd);
+        }
         break;
     case stc1:
         // コンボボックスの前のラベルをクリックしたら、対応するコンボボックスにフォーカスを当てる。
